@@ -1,0 +1,37 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3>Results</h3>
+<p>Your grades and evaluations.</p>
+{% if results_list and results_list|length > 0 %}
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Course</th>
+        <th>Component</th>
+        <th>Title</th>
+        <th>Marks</th>
+        <th>Feedback</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results_list %}
+        <tr>
+          <td>{{ r.course_id }}</td>
+          <td>{{ r.component }}</td>
+          <td>{{ r.reference_title or '-' }}</td>
+          <td>
+            {% if r.marks_obtained is not none %}
+              {{ r.marks_obtained }}{% if r.total_marks %}/{{ r.total_marks }}{% endif %}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ r.feedback or '-' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <div class="alert alert-info">No results available yet.</div>
+{% endif %}
+{% endblock %}

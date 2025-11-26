@@ -1,0 +1,102 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3 class="mb-3">Datasets Explorer</h3>
+<div class="card mb-3">
+  <div class="card-body">
+    <form class="form-inline" onsubmit="event.preventDefault(); loadData();">
+      <label class="mr-2">Dataset</label>
+      <select id="dsName" class="form-control mr-2">
+        <option value="attendance">Attendance</option>
+        <!-- <option value="grades">Grades</option> -->
+        <option value="enrollments">Enrollments</option>
+        <option value="demographics">Demographics</option>
+        <option value="lms">LMS Events</option>
+        <option value="academic_records">Academic Records</option>
+      </select>
+      <input id="searchQ" type="text" class="form-control mr-2" placeholder="Search...">
+      <input id="sortField" type="text" class="form-control mr-2" placeholder="Sort field (optional)">
+      <select id="sortOrder" class="form-control mr-2">
+        <option value="asc">Asc</option>
+        <option value="desc">Desc</option>
+      </select>
+      <button class="btn btn-primary">Load</button>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="text-muted small">Showing <span id="rowCount">0</span> rows</div>
+      <button class="btn btn-sm btn-outline-secondary" onclick="downloadCSV()">Download CSV</button>
+    </div>
+    <div class="table-responsive" style="max-height:60vh;">
+      <table class="table table-sm table-striped table-hover">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadData(){
+  const name = document.getElementById('dsName').value;
+  const q = document.getElementById('searchQ').value.trim();
+  const sort = document.getElementById('sortField').value.trim();
+  const order = document.getElementById('sortOrder').value;
+  const params = new URLSearchParams({ name, limit: '500' });
+  if(q) params.append('q', q);
+  if(sort) { params.append('sort', sort); params.append('order', order); }
+  const res = await fetch(`/api/analyst/dataset?${params.toString()}`);
+  const data = await res.json();
+  renderTable(data.headers || [], data.rows || []);
+}
+
+function renderTable(headers, rows){
+  const thead = document.getElementById('thead');
+  const tbody = document.getElementById('tbody');
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+  if(headers.length){
+    const tr = document.createElement('tr');
+    headers.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; tr.appendChild(th); });
+    thead.appendChild(tr);
+  }
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    headers.forEach(h=>{
+      const td=document.createElement('td');
+      let v=r[h];
+      if(typeof v==='object' && v!==null) v = JSON.stringify(v);
+      td.textContent = v===undefined? '': v;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  document.getElementById('rowCount').textContent = rows.length;
+}
+
+function downloadCSV(){
+  const headers = Array.from(document.querySelectorAll('#thead th')).map(th=>th.textContent);
+  const rows = Array.from(document.querySelectorAll('#tbody tr')).map(tr=>Array.from(tr.children).map(td=>`"${(td.textContent||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ds = document.getElementById('dsName');
+  const fname = (ds && ds.value ? ds.value : 'data') + '.csv';
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  document.getElementById('thead').innerHTML = '';
+  document.getElementById('tbody').innerHTML = '';
+  document.getElementById('rowCount').textContent = '0';
+}
+
+// Autoload default
+loadData();
+</script>
+{% endblock %}

@@ -1,0 +1,340 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2 class="mb-4">Student Dashboard</h2>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card bg-secondary text-white mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Profile Management</h5>
+        <p class="card-text">View and update your personal details.</p>
+        <a href="{{ url_for('student_profile') }}" class="btn btn-light">Manage Profile</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card bg-success text-white mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">My Courses</h5>
+        <p class="card-text">See courses you're enrolled in.</p>
+        <a href="{{ url_for('student_courses') }}" class="btn btn-light">View Courses</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card bg-primary text-white mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Enroll in Courses</h5>
+        <p class="card-text">Browse and enroll in new courses.</p>
+        <a href="{{ url_for('student_enroll') }}" class="btn btn-light">Enroll</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card bg-info text-white mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Assignments & Exams</h5>
+        <p class="card-text">View assignments and upload submissions.</p>
+        <a href="{{ url_for('student_assignments') }}" class="btn btn-light">View Assignments</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card bg-danger text-white mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Results</h5>
+        <p class="card-text">See your grades and evaluations.</p>
+        <a href="{{ url_for('student_results') }}" class="btn btn-light">View Results</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card bg-warning text-dark mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Progress Tracking</h5>
+        <p class="card-text">View progress charts and GPA.</p>
+        <a href="{{ url_for('student_progress') }}" class="btn btn-light">View Progress</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card bg-dark text-white mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Announcements</h5>
+        <p class="card-text">Important deadlines and updates.</p>
+        <a href="{{ url_for('student_announcements') }}" class="btn btn-light">View Announcements</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card bg-primary text-white mb-3 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Try a Prediction</h5>
+        <p class="card-text">Use any trained model to make a prediction. Click a model target to open its form.</p>
+        <button id="studPredictToggle" class="btn btn-light btn-sm" type="button" data-toggle="collapse" data-target="#studPredictPanel" aria-expanded="false" aria-controls="studPredictPanel" onclick="return window.studToggle && window.studToggle();">Open Prediction Form</button>
+        <div class="collapse mt-3" id="studPredictPanel">
+          <div class="p-3 bg-white text-dark rounded border">
+            <ul class="nav nav-pills mb-3" id="studModelTabs"></ul>
+            <div id="studModelContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // Global toggle function for inline onclick fallback
+  window.studToggle = function(){
+    try {
+      const btnToggle = document.getElementById('studPredictToggle');
+      const panel = document.getElementById('studPredictPanel');
+      if (!btnToggle || !panel) return false;
+      // If jQuery collapse is present, let it handle
+      if (window.$){
+        try {
+          const $panel = window.$('#studPredictPanel');
+          if (typeof $panel.collapse === 'function') {
+            $panel.collapse('toggle');
+            return false;
+          }
+        } catch(_){/* ignore */}
+      }
+      const isShown = panel.classList.contains('show') || panel.style.display === 'block';
+      if (isShown){
+        panel.classList.remove('show');
+        panel.style.display = 'none';
+        btnToggle.setAttribute('aria-expanded', 'false');
+        btnToggle.textContent = 'Open Prediction Form';
+      } else {
+        panel.classList.add('show');
+        panel.style.display = 'block';
+        btnToggle.setAttribute('aria-expanded', 'true');
+        btnToggle.textContent = 'Close Prediction Form';
+      }
+    } catch(e){}
+    return false;
+  };
+  const tabsEl = document.getElementById('studModelTabs');
+  const contentEl = document.getElementById('studModelContent');
+
+  function targetBadge(t){
+    const tl = (t||'').toLowerCase();
+    let cls = 'badge bg-secondary';
+    if (tl.includes('drop')) cls = 'badge bg-danger';
+    else if (tl.includes('price')) cls = 'badge bg-info text-dark';
+    else if (tl.includes('salary')) cls = 'badge bg-success';
+    return `<span class="${cls}"><strong>${t}</strong></span>`;
+  }
+
+  function renderModelForm(model){
+    const target = model.target || '';
+    const fields = (Array.isArray(model.fields) ? model.fields : []).filter(f => {
+      const n = String(f.name||'').trim().toLowerCase();
+      const isId = (n === 'student_id' || n === 'studentid' || n === 'player_id' || n === 'plyer_id' || n === 'id' || n.endsWith('_id'));
+      const isDate = (n === 'date' || n.includes('date') || n.includes('datetime') || n.includes('timestamp'));
+      return !(isId || isDate);
+    });
+    const inputs = fields.map(f => {
+      const name = f.name || '';
+      const type = f.type || 'number';
+      if (type === 'categorical' && Array.isArray(f.options)){
+        const opts = f.options.map(o => `<option value="${String(o)}">${String(o)}</option>`).join('');
+        return `<div class="col-md-4"><label class="form-label small">${name}</label><select class="form-control form-control-sm" data-field="${name}"><option value="">-- select --</option>${opts}</select></div>`;
+      }
+      if (type === 'number'){
+        return `<div class="col-md-4"><label class="form-label small">${name}</label><input type="number" step="any" class="form-control form-control-sm" data-field="${name}"></div>`;
+      }
+      return `<div class="col-md-4"><label class="form-label small">${name}</label><input type="text" class="form-control form-control-sm" data-field="${name}"></div>`;
+    }).join('');
+    return `
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div><strong>${target}</strong> &nbsp; ${targetBadge(target)}</div>
+        <button class="btn btn-success btn-sm" id="studPredictBtnOne" data-model="${model.model_id}">Predict</button>
+      </div>
+      <div class="row g-2" id="studFormOne" data-form="${model.model_id}">${inputs}</div>
+      <div class="alert mt-3" style="display:none;" id="studResultOne"></div>
+    `;
+  }
+
+  function collectPayloadFor(modelId){
+    const payload = {};
+    const root = document.getElementById('studFormOne');
+    if (!root || root.getAttribute('data-form') !== modelId) return payload;
+    root.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
+      const key = el.getAttribute('data-field');
+      payload[key] = el.value;
+    });
+    return payload;
+  }
+
+  function bindPredictHandler(modelId){
+    const btn = document.getElementById('studPredictBtnOne');
+    const resultBox = document.getElementById('studResultOne');
+    if (!btn || !resultBox) return;
+    btn.onclick = async () => {
+      const payload = collectPayloadFor(modelId);
+      resultBox.style.display = 'none';
+      resultBox.className = 'alert mt-3';
+      try{
+        const resp = await fetch(`/api/student/model/${modelId}/predict`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        const data = await resp.json();
+        if (!resp.ok){
+          resultBox.classList.add('alert-danger');
+          resultBox.textContent = data.error || 'Prediction failed';
+          resultBox.style.display = '';
+          return;
+        }
+        let badge = targetBadge(data.target || '');
+        const probText = (typeof data.probability === 'number') ? ` &nbsp; <small class="text-muted">(prob: ${Number(data.probability).toFixed(3)})</small>` : '';
+        const predNum = (typeof data.prediction === 'number') ? Number(data.prediction) : parseFloat(data.prediction || '0');
+        const predStr = !isNaN(predNum) ? Math.round(predNum).toString() : (data.prediction || '');
+        let cls = 'alert-success';
+        let outcomeHtml = '';
+        try{
+          const predNum = Number(data.prediction);
+          const isBinaryNum = Number.isFinite(predNum) && (predNum === 0 || predNum === 1);
+          const isBinaryResp = !!data.is_binary;
+          if (isBinaryNum || isBinaryResp || /drop/i.test(String(data.target||''))){
+            if (predNum === 1){
+              cls = 'alert-danger';
+              badge = '';
+              outcomeHtml = ` &nbsp; <span class="badge bg-danger"><strong>Dropout</strong></span>`;
+            } else if (predNum === 0) {
+              cls = 'alert-success';
+              badge = '';
+              outcomeHtml = ` &nbsp; <span class="badge bg-success"><strong>Continue</strong></span>`;
+            }
+          }
+        }catch(_){ }
+        resultBox.classList.add(cls);
+        resultBox.innerHTML = `<strong>Prediction:</strong> ${predStr}${probText} &nbsp; ${badge}${outcomeHtml}`;
+        resultBox.style.display = '';
+      }catch(err){
+        resultBox.classList.add('alert-danger');
+        resultBox.textContent = 'Prediction failed';
+        resultBox.style.display = '';
+      }
+    };
+  }
+
+  try {
+    const resp = await fetch("{{ url_for('api_student_models_meta') }}");
+    const meta = await resp.json();
+    if (!resp.ok){
+      contentEl.innerHTML = `<div class="text-danger small">${meta.error || 'No models available'}</div>`;
+      return;
+    }
+    const models = Array.isArray(meta.models) ? meta.models : [];
+    // client-side safety: remove any without target, blacklist unwanted targets, and dedupe by target lowercased
+    const seen = new Set();
+    const unique = [];
+    const blacklistTargets = new Set(['predicted_category']);
+    for (const m of models){
+      const tgt = String(m.target||'').trim();
+      if (!tgt) continue;
+      const key = tgt.toLowerCase();
+      if (blacklistTargets.has(key)) continue;
+      if (seen.has(key)) continue; seen.add(key); unique.push(m);
+    }
+    if (!unique.length){
+      contentEl.innerHTML = `<div class="text-muted small">No models available.</div>`;
+      return;
+    }
+    // render tabs
+    tabsEl.innerHTML = '';
+    unique.forEach((m, idx) => {
+      const li = document.createElement('li');
+      li.className = 'nav-item';
+      li.innerHTML = `<a href="#" class="nav-link" data-model="${m.model_id}">${m.target}</a>`;
+      tabsEl.appendChild(li);
+    });
+    function selectModel(mid){
+      const model = unique.find(x => x.model_id === mid);
+      if (!model) return;
+      contentEl.innerHTML = renderModelForm(model);
+      bindPredictHandler(mid);
+    }
+    tabsEl.addEventListener('click', (e) => {
+      const a = e.target.closest('a[data-model]');
+      if (!a) return;
+      e.preventDefault();
+      tabsEl.querySelectorAll('a[data-model]').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+      selectModel(a.getAttribute('data-model'));
+    });
+    // initial hint until user clicks a model
+    contentEl.innerHTML = `<div class="text-muted small">Select a model above to open its form.</div>`;
+  } catch(e){
+    contentEl.innerHTML = `<div class="text-danger small">Failed to load models</div>`;
+  }
+  // Fallback explicit toggle if data-* not triggering
+  try {
+    if (window.$) {
+      $('#studPredictToggle').on('click', function(e){
+        e.preventDefault();
+        const $panel = $('#studPredictPanel');
+        const $btn = $('#studPredictToggle');
+        if (typeof $panel.collapse === 'function') {
+          $panel.collapse('toggle');
+        } else {
+          // Manual toggle if bootstrap collapse plugin is unavailable
+          const el = $panel.get(0);
+          if (!el) return;
+          const isShown = el.classList.contains('show') || el.style.display === 'block';
+          if (isShown){
+            el.classList.remove('show');
+            el.style.display = 'none';
+            $btn.attr('aria-expanded', 'false').text('Open Prediction Form');
+          } else {
+            el.classList.add('show');
+            el.style.display = 'block';
+            $btn.attr('aria-expanded', 'true').text('Close Prediction Form');
+          }
+        }
+      });
+    }
+    // Always attach a vanilla listener as a safety net
+    const btnToggle = document.getElementById('studPredictToggle');
+    if (btnToggle && !btnToggle.__ml_toggle_bound){
+      btnToggle.addEventListener('click', function(e){
+        // If Bootstrap's collapse is available via jQuery, let it handle
+        if (window.$){
+          try {
+            const $panel = window.$('#studPredictPanel');
+            if (typeof $panel.collapse === 'function') return; // jQuery will handle
+          } catch(_){}
+        }
+        e.preventDefault();
+        const panel = document.getElementById('studPredictPanel');
+        if (!panel) return;
+        const isShown = panel.classList.contains('show') || panel.style.display === 'block';
+        if (isShown){
+          panel.classList.remove('show');
+          panel.style.display = 'none';
+          btnToggle.setAttribute('aria-expanded', 'false');
+          btnToggle.textContent = 'Open Prediction Form';
+        } else {
+          panel.classList.add('show');
+          panel.style.display = 'block';
+          btnToggle.setAttribute('aria-expanded', 'true');
+          btnToggle.textContent = 'Close Prediction Form';
+        }
+      });
+      btnToggle.__ml_toggle_bound = true;
+    }
+  } catch(e){}
+});
+</script>
+{% endblock %}

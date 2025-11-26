@@ -1,0 +1,348 @@
+<!-- 
+<h1>Welcome Admin, {{ user }}</h1>
+<p>This is Admin Dashboard</p> -->
+
+
+
+
+
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2>Admin Panel</h2>
+{% if debug_students or debug_teachers %}
+<div class="alert alert-warning" role="alert">
+  <strong>Debug view</strong> — You opened dashboard with <code>?debug=1</code>. Below are samples used to resolve courses.
+  <details class="mt-2">
+    <summary>Students (enrollments snapshot)</summary>
+    <pre class="small mb-0">{{ (debug_students or []) | tojson(indent=2) }}</pre>
+  </details>
+  {% if debug_teachers %}
+  <details class="mt-2">
+    <summary>Teachers (query + matched counts)</summary>
+    <pre class="small mb-0">{{ (debug_teachers or []) | tojson(indent=2) }}</pre>
+  </details>
+  {% endif %}
+  <p class="small mb-0 mt-2">Disable by removing <code>?debug=1</code> from URL.</p>
+  </div>
+{% endif %}
+<div class="row">
+  <div class="col-md-4">
+    <div class="card text-bg-info mb-3">
+      <div class="card-body">
+        <h5 class="card-title d-flex justify-content-between align-items-center">
+          <span>Data Ingestion</span>
+          {% if new_feedback_count is defined %}
+          <span class="badge badge-light" id="fbBadge">New FB: {{ new_feedback_count }}</span>
+          {% endif %}
+        </h5>
+        <p class="card-text">Upload CSVs for academic datasets.</p>
+        <a href="{{ url_for('admin_ingestion') }}" class="btn btn-light">Open</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-bg-primary mb-3">
+      <div class="card-body">
+        <h5 class="card-title d-flex justify-content-between align-items-center">
+          <span>Manage Users</span>
+          {% if total_users is defined %}
+          <span class="badge badge-light" id="userBadge">Users: {{ total_users }}</span>
+          {% endif %}
+        </h5>
+        <p class="card-text">Add, remove or update users in the system.</p>
+        <a href="{{ url_for('admin_users') }}" class="btn btn-light">Go</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-bg-success mb-3">
+      <div class="card-body">
+        <h5 class="card-title d-flex justify-content-between align-items-center">
+          <span>Analyst Predictions (Manual)</span>
+          <span class="badge badge-light">{{ manual_pred_count or 0 }}</span>
+        </h5>
+        <p class="card-text">View all manual predictions submitted by analysts.</p>
+        <a href="{{ url_for('admin_predictions') }}" class="btn btn-light">View</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-dark mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Admin Dashboard</h5>
+        <p class="card-text">Manage users, courses, and system settings.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-info mb-3">
+      <div class="card-body">
+        <h5 class="card-title d-flex justify-content-between align-items-center">
+          <span>Notifications (Model Training)</span>
+          <span class="badge badge-light">{{ notifications_count or 0 }}</span>
+        </h5>
+        <p class="card-text">View latest model training notifications from analysts.</p>
+        <a href="{{ url_for('admin_notifications') }}" class="btn btn-light">View</a>
+      </div>
+    </div>
+  </div>
+  <!-- Users Overview Cards -->
+  <div class="col-md-12">
+    <div class="row">
+      <div class="col-lg-4 mb-3">
+        <div class="card h-100 card-students">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Students & Enrollments</span>
+            <a href="{{ url_for('admin_students_overview') }}" class="btn btn-sm btn-outline-primary">View all</a>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Courses</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if student_rows %}
+                    {% for s in student_rows %}
+                    <tr>
+                      <td>
+                        <div class="font-weight-bold">{{ s.name }}</div>
+                        <div class="small text-muted">{{ s.email }}</div>
+                      </td>
+                      <td style="max-width:240px; white-space:normal;">
+                        {% if s.courses and s.courses|length > 0 %}
+                          {% for c in s.courses %}
+                            <span class="badge badge-primary mr-1 mb-1" style="font-size:85%;">{{ c }}</span>
+                          {% endfor %}
+                        {% else %}
+                          <span class="text-muted">None</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr><td colspan="2" class="text-center text-muted">No students</td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4 mb-3">
+        <div class="card h-100 card-teachers">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Teachers & Offered Courses</span>
+            <a href="{{ url_for('admin_teachers_overview') }}" class="btn btn-sm btn-outline-primary">View all</a>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Courses</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if teacher_rows %}
+                    {% for t in teacher_rows %}
+                    <tr>
+                      <td>
+                        <div class="font-weight-bold">{{ t.name }}</div>
+                        <div class="small text-muted">{{ t.email }}</div>
+                      </td>
+                      <td style="max-width:240px; white-space:normal;">
+                        {% if t.courses and t.courses|length > 0 %}
+                          {% for c in t.courses %}<span class="badge badge-info mr-1 mb-1">{{ c }}</span>{% endfor %}
+                        {% else %}
+                          <span class="text-muted">None</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr><td colspan="2" class="text-center text-muted">No teachers</td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4 mb-3">
+        <div class="card h-100 card-analysts">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Analysts</span>
+            <a href="{{ url_for('admin_analysts_overview') }}" class="btn btn-sm btn-outline-primary">View all</a>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if analyst_rows %}
+                    {% for a in analyst_rows %}
+                    <tr>
+                      <td>{{ a.name }}</td>
+                      <td class="small text-muted">{{ a.email }}</td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr><td colspan="2" class="text-center text-muted">No analysts</td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Recent Feedback</span>
+        <a href="{{ url_for('admin_feedback') }}" class="btn btn-sm btn-outline-primary">Open Feedback Page</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Message</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if recent_feedback %}
+                {% for fb in recent_feedback %}
+                <tr>
+                  <td>{{ fb.name or '-' }}</td>
+                  <td>{{ fb.email or '-' }}</td>
+                  <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ fb.message }}</td>
+                  <td>{{ fb.created_at.strftime('%Y-%m-%d %H:%M') if fb.created_at else '' }}</td>
+                  <td>
+                    {% if fb.status == 'new' %}
+                      <span class="badge badge-warning">New</span>
+                    {% elif fb.status == 'resolved' %}
+                      <span class="badge badge-success">Resolved</span>
+                    {% else %}
+                      <span class="badge badge-secondary">{{ fb.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="width:1%; white-space:nowrap;">
+                    <form method="post" action="{{ url_for('admin_feedback_delete', fid=fb._id) }}" onsubmit="return confirm('Delete this feedback?');">
+                      <input type="hidden" name="next" value="{{ url_for('admin_dashboard') }}" />
+                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="6" class="text-center text-muted">No feedback yet.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function(){
+(function(){
+  // Poll every 15 seconds for new feedback
+  var lastCount = {{ (new_feedback_count or 0)|tojson }};
+  var TS_KEY = 'fb_last_ts';
+  var USER_TS_KEY = 'user_last_ts';
+  var initialUserCount = {{ (total_users or 0)|tojson }};
+  async function poll(){
+    try {
+      // Feedback check
+      var res = await fetch('/admin/feedback_count');
+      if(!res.ok) return;
+      var data = await res.json();
+      var count = (data && typeof data.new_count === 'number') ? data.new_count : 0;
+      var latestTs = (data && data.latest_created_at) ? data.latest_created_at : null;
+      // Update badge
+      var badge = document.getElementById('fbBadge');
+      if (badge) { badge.textContent = 'New FB: ' + count; }
+      // Determine if there is a truly new feedback (by timestamp)
+      var storedTs = null;
+      try { storedTs = localStorage.getItem(TS_KEY); } catch(_) { storedTs = null; }
+      var isNewArrival = latestTs && (!storedTs || latestTs > storedTs);
+      var increasedCount = (typeof lastCount === 'number') && (count > lastCount);
+      if ((isNewArrival || increasedCount) && window.Swal){
+        Swal.fire({
+          icon: 'info',
+          title: 'New Feedback Received',
+          text: 'You have ' + count + ' new feedback item(s).',
+          confirmButtonText: 'View',
+          showCancelButton: true
+        }).then(function(result){
+          if(result.isConfirmed){ window.location = '{{ url_for('admin_feedback') }}'; }
+        });
+        try { localStorage.setItem(TS_KEY, latestTs); } catch(_) {}
+      }
+      lastCount = count;
+      // Users check
+      var resU = await fetch('/admin/user_count');
+      if (resU && resU.ok){
+        var dataU = await resU.json();
+        var totalU = (dataU && typeof dataU.total === 'number') ? dataU.total : 0;
+        var latestUserTs = (dataU && dataU.latest_created_at) ? dataU.latest_created_at : null;
+        var userBadge = document.getElementById('userBadge');
+        if (userBadge) { userBadge.textContent = 'Users: ' + totalU; }
+        var storedUserTs = null;
+        try { storedUserTs = localStorage.getItem(USER_TS_KEY); } catch(_) { storedUserTs = null; }
+        var isNewUser = latestUserTs && (!storedUserTs || latestUserTs > storedUserTs);
+        if (isNewUser && window.Swal){
+          Swal.fire({
+            icon: 'success',
+            title: 'New User Signup',
+            text: 'A new user has just signed up.',
+            confirmButtonText: 'OK'
+          });
+          try { localStorage.setItem(USER_TS_KEY, latestUserTs); } catch(_) {}
+        }
+      }
+    } catch(e) { /* ignore */ }
+  }
+  // Initialize stored timestamp on first load if missing
+  (function initTs(){
+    try {
+      var existing = localStorage.getItem(TS_KEY);
+      if (!existing) {
+        // Set to latest known from server rendered context if present in table
+        // We cannot access server ts directly here; first poll will populate it.
+        localStorage.setItem(TS_KEY, '');
+      }
+      var existingU = localStorage.getItem(USER_TS_KEY);
+      if (!existingU) {
+        localStorage.setItem(USER_TS_KEY, '');
+      }
+    } catch(_) {}
+  })();
+  // First check immediately, then every 15s
+  poll();
+  setInterval(poll, 15000);
+})();
+});
+</script>
+{% endblock %}

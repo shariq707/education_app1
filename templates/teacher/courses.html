@@ -1,0 +1,87 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2 class="mb-4">My Courses</h2>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm card-teacher-offer">
+      <div class="card-body">
+        <h5 class="card-title">Create / Claim Course</h5>
+        <p class="text-muted mb-3">Enter a unique code and title. If a course with this code exists without an owner, it will be assigned to you.</p>
+        <form method="post" action="{{ url_for('teacher_courses_create') }}">
+          <div class="mb-3">
+            <label class="form-label">Code</label>
+            <input type="text" class="form-control" name="code" placeholder="e.g., CS101" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" class="form-control" name="title" placeholder="Intro to Programming" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="2" placeholder="Short description (optional)"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm card-teacher-list">
+      <div class="card-body">
+        <h5 class="card-title">Your Courses</h5>
+        {% if items and items|length > 0 %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Title</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                  <th style="width: 420px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  <tr>
+                    <td><code>{{ item.code }}</code></td>
+                    <td>{{ item.title }}</td>
+                    <td class="text-truncate" style="max-width: 320px;">{{ item.description }}</td>
+                    <td>
+                      {% if item.active %}
+                        <span class="badge text-bg-success">Active</span>
+                      {% else %}
+                        <span class="badge text-bg-secondary">Inactive</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <form class="row align-items-center" method="post" action="{{ url_for('teacher_courses_update', cid=item._id) }}">
+                        <div class="col-md-4">
+                          <input type="text" class="form-control form-control-sm" name="title" value="{{ item.title }}" placeholder="Title" />
+                        </div>
+                        <div class="col-md-6 pr-md-3">
+                          <input type="text" class="form-control form-control-sm" name="description" value="{{ item.description }}" placeholder="Description" />
+                        </div>
+                        <div class="col-md-2 d-flex justify-content-end mt-2 mt-md-0" style="min-width: 220px;">
+                          <button type="submit" class="btn btn-sm btn-outline-primary mr-2">Update</button>
+                          <button type="submit" class="btn btn-sm btn-outline-danger" formaction="{{ url_for('teacher_courses_delete', cid=item._id) }}" formmethod="post" onclick="return confirm('Delete this course?');">Delete</button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-secondary mb-0">You don't have any courses yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

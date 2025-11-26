@@ -1,0 +1,127 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3 class="mb-3">Manual Prediction</h3>
+<div class="row">
+  <div class="col-lg-5 mb-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Enter Student Data</h5>
+        {% if error %}
+        <div class="alert alert-warning">{{ error }}</div>
+        {% endif %}
+        <form method="post">
+          <div class="form-group">
+            <label>Student Name</label>
+            <input type="text" class="form-control" name="student_name" placeholder="e.g., John Doe" value="{{ (input.student_name if input) or '' }}" required>
+          </div>
+          <div class="form-group">
+            <label>Assignment Marks</label>
+            <input type="number" step="0.01" min="0" max="100" class="form-control" name="assignment_marks" placeholder="e.g., 65" value="{{ (input.assignment_marks if input) or '' }}" required>
+          </div>
+          <div class="form-group">
+            <label>Test Marks</label>
+            <input type="number" step="0.01" min="0" max="100" class="form-control" name="test_marks" placeholder="e.g., 58" value="{{ (input.test_marks if input) or '' }}" required>
+          </div>
+          <div class="form-group">
+            <label>Overall Percentage</label>
+            <input type="number" step="0.01" min="0" max="100" class="form-control" name="percentage" placeholder="e.g., 62" value="{{ (input.percentage if input) or '' }}" required>
+          </div>
+          <div class="form-group">
+            <label>Attendance (%)</label>
+            <input type="number" step="0.01" min="0" max="100" class="form-control" name="attendance" placeholder="e.g., 78" value="{{ (input.attendance if input) or '' }}" required>
+          </div>
+          <div class="d-flex">
+            <button type="submit" class="btn btn-primary mr-2">Predict</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="clearForm()">Clear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7 mb-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Result</h5>
+        {% if prediction %}
+          <div class="alert {{ 'alert-danger' if prediction=='Dropped Out' else 'alert-success' }}">
+            <strong>Prediction:</strong> {{ prediction }}
+          </div>
+          <h6 class="mt-3">Entered Data</h6>
+          <ul class="list-group list-group-flush">
+            {% if input.student_name %}
+            <li class="list-group-item d-flex justify-content-between"><span>Student Name</span><span>{{ input.student_name }}</span></li>
+            {% endif %}
+            <li class="list-group-item d-flex justify-content-between"><span>Assignment Marks</span><span>{{ input.assignment_marks }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><span>Test Marks</span><span>{{ input.test_marks }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><span>Percentage</span><span>{{ input.percentage }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><span>Attendance (%)</span><span>{{ input.attendance }}</span></li>
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">Fill the form and click Predict to see the result here.</p>
+        {% endif %}
+        <hr>
+        <p class="small text-muted mb-0">Heuristic: Marked as "Dropped Out" if percentage &lt; 45, or attendance &lt; 40, or assignment marks &lt; 40, or test marks &lt; 40.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-body">
+    <h5 class="card-title">Trend Charts</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <canvas id="barChart" height="220"></canvas>
+      </div>
+      <div class="col-md-6 mb-3">
+        <canvas id="lineChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<script id="preset-data" type="application/json">{{ (input or {}) | tojson | safe }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  var presetObj = {};
+  try {
+    var _el = document.getElementById('preset-data');
+    presetObj = JSON.parse((_el && _el.textContent) || '{}');
+  } catch (e) { presetObj = {}; }
+  function readCurrent(){
+    if (presetObj && Object.keys(presetObj).length) {
+      return {
+        assignment: Number(presetObj.assignment_marks !== undefined ? presetObj.assignment_marks : 0),
+        test: Number(presetObj.test_marks !== undefined ? presetObj.test_marks : 0),
+        percentage: Number(presetObj.percentage !== undefined ? presetObj.percentage : 0),
+        attendance: Number(presetObj.attendance !== undefined ? presetObj.attendance : 0)
+      };
+    }
+    var a = parseFloat(document.querySelector('[name="assignment_marks"]').value || '');
+    var t = parseFloat(document.querySelector('[name="test_marks"]').value || '');
+    var p = parseFloat(document.querySelector('[name="percentage"]').value || '');
+    var at = parseFloat(document.querySelector('[name="attendance"]').value || '');
+    return { assignment: isNaN(a)?0:a, test: isNaN(t)?0:t, percentage: isNaN(p)?0:p, attendance: isNaN(at)?0:at };
+  }
+  function clearForm(){
+    // reset inputs
+    var fields = ['student_name','assignment_marks','test_marks','percentage','attendance'];
+    fields.forEach(function(name){
+      var el = document.querySelector('[name="'+name+'"]');
+      if (el) el.value = '';
+    });
+    // clear preset and redraw charts with zeros
+    presetObj = {};
+    drawCharts();
+  }
+  function drawCharts(){
+    const v = readCurrent();
+    const labels = ['Assignment','Test','Percentage','Attendance'];
+    const data = [v.assignment, v.test, v.percentage, v.attendance];
+    const bg = ['#4e79a7','#f28e2b','#59a14f','#e15759'];
+    const common = {labels, datasets:[{label:'Values', data, backgroundColor:bg, borderColor:bg, fill:false, tension:0.2}]};
+    new Chart(document.getElementById('barChart'), { type:'bar', data: common, options:{responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, max:100 }}}});
+    new Chart(document.getElementById('lineChart'), { type:'line', data: common, options:{responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, max:100 }}}});
+  }
+  drawCharts();
+</script>
+{% endblock %}

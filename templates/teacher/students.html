@@ -1,0 +1,60 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2 class="mb-4">Students In My Courses</h2>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    {% if rows and rows|length > 0 %}
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Student</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th style="width: 260px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td><strong>{{ r.course_code }}</strong><div class="text-muted small">{{ r.course_title }}</div></td>
+              <td>{{ r.student_name }}</td>
+              <td>{{ r.student_email }}</td>
+              <td>
+                {% if r.status == 'pending' %}
+                  <span class="badge text-bg-warning">Pending</span>
+                {% elif r.status == 'active' %}
+                  <span class="badge text-bg-success">Active</span>
+                {% elif r.status == 'declined' %}
+                  <span class="badge text-bg-secondary">Declined</span>
+                {% else %}
+                  <span class="badge text-bg-light text-dark">{{ r.status }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if r.status == 'pending' %}
+                  <form method="post" action="{{ url_for('teacher_enrollment_approve', eid=r.enrollment_id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-success me-2">Approve</button>
+                  </form>
+                  <form method="post" action="{{ url_for('teacher_enrollment_decline', eid=r.enrollment_id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Decline</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ url_for('teacher_enrollment_remove', eid=r.enrollment_id) }}" class="d-inline" onsubmit="return confirm('Remove this student from the course?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-secondary mb-0">No students found for your courses.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

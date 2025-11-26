@@ -1,0 +1,24 @@
+Flask==2.3.3
+flask-pymongo==2.3.0
+pymongo==4.6.1
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.4.2
+
+twilio==9.2.3
+
+# Load env vars from .env for local/dev
+python-dotenv==1.0.1
+
+
+
+
+
+# What looks covered
+# 1. Authn/Authz basics: Roles and access controls are mentioned.
+# 2. Data pipeline scope: Historical + real-time ingestion; multiple education data domains.
+# 3. Big data storage/processing: HDFS + parallel/batch + streaming.
+# 4. Analytics/ML: Predictive, anomaly detection, trends, correlations.
+# 5. Dashboards: Interactive and role-focused.
+# 6. Alerts: Threshold-based, real-time.
+# 7. Support/Feedback: Channel for users to reach out.

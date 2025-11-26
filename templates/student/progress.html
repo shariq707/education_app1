@@ -1,0 +1,94 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3>Progress Tracking</h3>
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <p class="mb-0">Average marks per course (select chart type):</p>
+  <div class="d-flex align-items-center">
+    <label for="chartType" class="mr-2 mb-0">Chart:</label>
+    <select id="chartType" class="form-control form-control-sm" style="width: 140px;">
+      <option value="bar" selected>Bar</option>
+      <option value="line">Line</option>
+      <option value="pie">Pie</option>
+    </select>
+  </div>
+  </div>
+<div id="chartContainer" style="max-width: 720px; width: 100%; margin: 0 auto;">
+  <canvas id="progressChart"
+          height="140"
+          data-labels='{{ (chart_labels or []) | tojson }}'
+          data-values='{{ (chart_values or []) | tojson }}'
+          data-colors='{{ (chart_colors or []) | tojson }}'></canvas>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('progressChart');
+const labels = JSON.parse(ctx.dataset.labels || '[]');
+const values = JSON.parse(ctx.dataset.values || '[]');
+let colors = JSON.parse(ctx.dataset.colors || '[]');
+
+// Generate a distinct color palette if needed (e.g., two courses had same color)
+function generatePalette(n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) {
+    const hue = Math.round((360 / Math.max(n, 1)) * i);
+    arr.push(`hsl(${hue} 70% 50%)`);
+  }
+  return arr;
+}
+
+// If provided colors are missing, length mismatch, or not unique, replace with palette
+function ensureDistinctColors(existing, n) {
+  const uniq = new Set((existing || []).filter(Boolean));
+  if (!existing || existing.length !== n || uniq.size < n) {
+    return generatePalette(n);
+  }
+  return existing;
+}
+
+colors = ensureDistinctColors(colors, labels.length);
+
+let chart;
+function createChart(type){
+  if (chart) { chart.destroy(); }
+  const commonData = {
+    labels: labels,
+    datasets: [{
+      label: 'Average %',
+      data: values,
+      // For line: no area fill, show points, use borderColor only
+      backgroundColor: (type === 'line') ? 'transparent' : colors,
+      borderColor: (type === 'pie') ? undefined : colors,
+      borderWidth: (type === 'pie') ? 0 : 2,
+      pointBackgroundColor: (type === 'line') ? colors : undefined,
+      pointRadius: (type === 'line') ? 3 : undefined,
+      tension: (type === 'line') ? 0.3 : 0,
+      fill: false
+    }]
+  };
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: (type === 'pie') ? 1 : 2,
+    plugins: {
+      legend: { display: true },
+      tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }
+    }
+  };
+  if (type === 'bar' || type === 'line'){
+    options.scales = {
+      y: { beginAtZero: true, max: 100, title: { display: true, text: 'Percentage (%)' } },
+      x: { title: { display: true, text: 'Course' } }
+    };
+  }
+  chart = new Chart(ctx, { type, data: commonData, options });
+}
+
+// init
+createChart('bar');
+
+// on change
+document.getElementById('chartType').addEventListener('change', function(){
+  createChart(this.value);
+});
+</script>
+{% endblock %}

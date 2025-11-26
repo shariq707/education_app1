@@ -1,0 +1,294 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Our Services</h2>
+<ul class="list-group mb-4">
+  <li class="list-group-item">
+    📚 <a id="onlineCoursesLink" href="javascript:void(0)" class="text-decoration-none" data-toggle="collapse" data-target="#online-courses" role="button" aria-expanded="false" aria-controls="online-courses">Online Courses</a>
+  </li>
+  <li class="list-group-item">
+    👨‍🏫 <a id="teacherResourcesLink" href="javascript:void(0)" class="text-decoration-none" data-toggle="collapse" data-target="#teacher-resources" role="button" aria-expanded="false" aria-controls="teacher-resources">Teacher Resources</a>
+  </li>
+  <li class="list-group-item">
+    🎓 <a id="studentProgressLink" href="javascript:void(0)" class="text-decoration-none" data-toggle="collapse" data-target="#student-progress" role="button" aria-expanded="false" aria-controls="student-progress">Student Progress Tracking</a>
+  </li>
+  <li class="list-group-item">
+    📊 <a id="dataAnalysisLink" href="javascript:void(0)" class="text-decoration-none" data-toggle="collapse" data-target="#data-analysis" role="button" aria-expanded="false" aria-controls="data-analysis">Data Analysis for Education</a>
+  </li>
+</ul>
+
+<!-- Online Courses Cards -->
+<div id="online-courses" class="container mb-5 collapse">
+  <h3 class="mb-4">Explore Online Courses</h3>
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Computer Science</h5>
+          <p class="card-text">Programming, data structures, algorithms, and system design to build strong CS fundamentals.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Mathematics</h5>
+          <p class="card-text">Algebra, calculus, statistics, and applied math to solve real-world problems.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Physics</h5>
+          <p class="card-text">Classical mechanics, electromagnetism, and modern physics with hands-on examples.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Chemistry</h5>
+          <p class="card-text">Organic, inorganic, and physical chemistry with lab-focused learning approaches.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Biology</h5>
+          <p class="card-text">Cell biology, genetics, ecology, and human physiology in engaging modules.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">English</h5>
+          <p class="card-text">Grammar, vocabulary, communication, and literature to sharpen language skills.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Analysis for Education (collapsible) -->
+<div id="data-analysis" class="container mb-5 collapse">
+  <h3 class="mb-4">Data Analysis for Education</h3>
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">What We Analyze</h5>
+          <p class="card-text">
+            We transform raw academic data into insights. Typical analyses include cohort performance trends, course-wise averages,
+            attendance correlations, and at-risk student detection using simple rules-based metrics.
+          </p>
+          <ul class="mb-0">
+            <li>Score distributions and trends over time</li>
+            <li>Subject comparisons and benchmarks</li>
+            <li>Attendance vs performance correlation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Bar Chart: Subject Averages</h5>
+          <div class="text-center viz">
+            <!-- Static SVG Bar Chart -->
+            <svg viewBox="0 0 320 180" width="100%" height="180" role="img" aria-label="Bar chart of subject averages">
+              <rect x="0" y="0" width="320" height="180" fill="var(--card-bg)" rx="6"/>
+              <g transform="translate(40,10)">
+                <line x1="0" y1="150" x2="240" y2="150" stroke="var(--card-border)"/>
+                <rect x="10" y="70" width="40" height="80" fill="#0d6efd"/>
+                <rect x="70" y="50" width="40" height="100" fill="#17a2b8"/>
+                <rect x="130" y="95" width="40" height="55" fill="#28a745"/>
+                <rect x="190" y="35" width="40" height="115" fill="#ffc107"/>
+                <text x="30" y="165" text-anchor="middle" font-size="12" fill="var(--text)">Math</text>
+                <text x="90" y="165" text-anchor="middle" font-size="12" fill="var(--text)">Sci</text>
+                <text x="150" y="165" text-anchor="middle" font-size="12" fill="var(--text)">Eng</text>
+                <text x="210" y="165" text-anchor="middle" font-size="12" fill="var(--text)">CS</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Line Chart: GPA Trend</h5>
+          <div class="text-center viz">
+            <!-- Static SVG Line Chart -->
+            <svg viewBox="0 0 320 180" width="100%" height="180" role="img" aria-label="Line chart of GPA over 6 terms">
+              <rect x="0" y="0" width="320" height="180" fill="var(--card-bg)" rx="6"/>
+              <g transform="translate(40,10)">
+                <line x1="0" y1="150" x2="240" y2="150" stroke="var(--card-border)"/>
+                <polyline fill="none" stroke="#dc3545" stroke-width="3" points="0,140 48,120 96,110 144,95 192,90 240,80"/>
+                <circle cx="0" cy="140" r="3" fill="#dc3545"/>
+                <circle cx="48" cy="120" r="3" fill="#dc3545"/>
+                <circle cx="96" cy="110" r="3" fill="#dc3545"/>
+                <circle cx="144" cy="95" r="3" fill="#dc3545"/>
+                <circle cx="192" cy="90" r="3" fill="#dc3545"/>
+                <circle cx="240" cy="80" r="3" fill="#dc3545"/>
+                <text x="0" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T1</text>
+                <text x="48" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T2</text>
+                <text x="96" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T3</text>
+                <text x="144" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T4</text>
+                <text x="192" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T5</text>
+                <text x="240" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T6</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Pie Chart: Time Allocation</h5>
+          <div class="text-center viz">
+            <!-- Static SVG Pie Chart -->
+            <svg viewBox="0 0 180 180" width="100%" height="180" role="img" aria-label="Pie chart of time allocation">
+              <circle cx="90" cy="90" r="80" fill="var(--card-bg)"/>
+              <!-- Using simple arcs approximated by paths -->
+              <path d="M90,90 L90,10 A80,80 0 0,1 164,118 Z" fill="#007bff"></path>
+              <path d="M90,90 L164,118 A80,80 0 0,1 42,150 Z" fill="#28a745"></path>
+              <path d="M90,90 L42,150 A80,80 0 0,1 90,10 Z" fill="#ffc107"></path>
+              <g font-size="12" fill="var(--text)">
+                <rect x="10" y="10" width="10" height="10" fill="#007bff"/><text x="25" y="20">Study</text>
+                <rect x="10" y="28" width="10" height="10" fill="#28a745"/><text x="25" y="38">Practice</text>
+                <rect x="10" y="46" width="10" height="10" fill="#ffc107"/><text x="25" y="56">Projects</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Progress Tracking Cards (standalone, not nested) -->
+<div id="student-progress" class="container mb-5 collapse">
+  <h3 class="mb-4">Student Progress Tracking</h3>
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">GPA & Trend Charts</h5>
+          <p class="card-text">Visualize your performance over time with bar, line, and pie charts for a quick snapshot of progress.</p>
+          <a href="{{ url_for('student_progress') }}" class="btn btn-primary btn-sm">View My Progress</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Course-wise Insights</h5>
+          <p class="card-text">Compare average scores across your courses and identify areas to focus on for improvement.</p>
+          <a href="{{ url_for('student_results') }}" class="btn btn-outline-primary btn-sm">See Results</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Assignments to Action</h5>
+          <p class="card-text">Stay on track with upcoming assignments and submit work directly from your dashboard.</p>
+          <a href="{{ url_for('student_assignments') }}" class="btn btn-outline-secondary btn-sm">Open Assignments</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Teacher Resources Cards (standalone, not nested) -->
+<div id="teacher-resources" class="container mb-5 collapse">
+  <h3 class="mb-4">Teacher Resources</h3>
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Course Builder</h5>
+          <p class="card-text">Create, claim, and manage courses with codes, titles, and descriptions.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Assignment Manager</h5>
+          <p class="card-text">Publish assignments with deadlines and attachments for enrolled students.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Student Roster</h5>
+          <p class="card-text">Approve or decline enrollments and remove students from courses.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Evaluate & Grade</h5>
+          <p class="card-text">Review submissions, enter scores and feedback, and update student results.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Announcements</h5>
+          <p class="card-text">Post course announcements to keep students informed on key updates.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Analytics Snapshot</h5>
+          <p class="card-text">Get a quick overview of class performance and participation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Ensure jQuery and Bootstrap are loaded before running
+  (function initWhenReady(){
+    if (typeof window.jQuery === 'undefined') { return setTimeout(initWhenReady, 50); }
+    $(function(){
+      // Accordion-like behavior: open one section at a time
+      function registerLink(linkSel, targetSel){
+        $(linkSel).on('click', function(e){
+          e.preventDefault();
+          // Hide other sections, then show the target
+          var $target = $(targetSel);
+          $('.collapse')
+            .not($target)
+            .each(function(){ $(this).collapse('hide'); });
+          $target.collapse('show');
+        });
+        $(targetSel).on('shown.bs.collapse', function(){
+          $('html, body').animate({scrollTop: $(this).offset().top - 80}, 300);
+        });
+      }
+
+      registerLink('#onlineCoursesLink',   '#online-courses');
+      registerLink('#teacherResourcesLink','#teacher-resources');
+      registerLink('#studentProgressLink', '#student-progress');
+      registerLink('#dataAnalysisLink',    '#data-analysis');
+    });
+  })();
+</script>
+{% endblock %}

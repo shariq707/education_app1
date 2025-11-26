@@ -1,0 +1,33 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3 class="mb-3">Visualizations</h3>
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <div class="card"><div class="card-body"><h6>Course Demand (Top 10)</h6><canvas id="chartDemand" height="200"></canvas></div></div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card"><div class="card-body"><h6>Attendance Status</h6><canvas id="chartAttendance" height="200"></canvas></div></div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card"><div class="card-body"><h6>Performance (Avg Score by Course)</h6><canvas id="chartPerformance" height="200"></canvas></div></div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card"><div class="card-body"><h6>Dropout Signals (LMS Drop Events)</h6><canvas id="chartDropout" height="200"></canvas></div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+async function loadCharts(){
+  const res = await fetch('/api/analyst/charts/overview');
+  const data = await res.json();
+  const colors = 'rgba(54, 162, 235, 0.6)';
+  const mkBar = (id, labels, values, label) => new Chart(document.getElementById(id), { type:'bar', data:{ labels, datasets:[{ label, data: values, backgroundColor: colors }] }, options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } } });
+  mkBar('chartDemand', data.course_demand?.labels||[], data.course_demand?.values||[], 'Enrollments');
+  mkBar('chartAttendance', data.attendance_status?.labels||[], data.attendance_status?.values||[], 'Count');
+  mkBar('chartPerformance', data.performance?.labels||[], data.performance?.values||[], 'Avg Score');
+  mkBar('chartDropout', data.dropout?.labels||[], data.dropout?.values||[], 'Drops');
+}
+loadCharts();
+</script>
+{% endblock %}

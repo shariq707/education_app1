@@ -1,0 +1,570 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2>Model Train and Predict</h2>
+<p class="text-muted">Upload the training CSV, train a Linear Regression model, then fill the generated form to predict whether a student will continue or drop out. You can also save the prediction and charts.</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">1) Upload CSV & Train</h5>
+    <form id="trainForm" enctype="multipart/form-data">
+      <div class="form-row align-items-end">
+        <div class="col-md-8">
+          <label for="csvFile">CSV File</label>
+          <input type="file" class="form-control-file" id="csvFile" name="file" accept=".csv" required>
+          <!-- <small class="form-text text-muted">Headers (required): Student_ID, Age, Gender, Attendance_Percentage, Assignment_Completion, Test_Score, Family_Income, Parental_Education, Access_to_Resources, Dropout</small> -->
+        </div>
+        <div class="col-md-4 text-md-right mt-2 mt-md-0">
+          <button type="button" id="btnUpload" class="btn btn-outline-secondary">Check & Load Headers</button>
+          <button type="button" id="btnTrain" class="btn btn-primary" disabled>Train Model</button>
+        </div>
+      </div>
+      <div class="form-row mt-2">
+        <div class="col-md-6">
+          <label for="targetSelect">Target Column</label>
+          <select id="targetSelect" class="form-control" disabled></select>
+          <small class="form-text text-muted">Choose the target column to predict. Default is the last column.</small>
+        </div>
+      </div>
+    </form>
+    <div id="trainResult" class="mt-3" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">2) Predict</h5>
+    <p class="text-muted mb-2">Fill the fields detected from the CSV headers. Then click Predict.</p>
+    <form id="predictForm" onsubmit="return false;"></form>
+    <div class="mt-2 text-right">
+      <button id="btnPredict" class="btn btn-success" disabled>Predict</button>
+    </div>
+    <div id="predictionBox" class="alert mt-3" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">3) Charts</h5>
+    <p class="text-muted">Choose which input fields to visualize. Charts use the values you enter above.</p>
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label for="chartFields">Fields for Bar/Line</label>
+        <select id="chartFields" class="form-control" multiple></select>
+        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple fields.</small>
+      </div>
+      <div class="col-md-6">
+        <label for="pieFields">Fields for Pie</label>
+        <select id="pieFields" class="form-control" multiple></select>
+        <small class="form-text text-muted">Slices will be the selected fields.</small>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h6 class="mb-2">Bar Chart (Bucket Counts)</h6>
+            <canvas id="chartBar"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h6 class="mb-2">Line Chart (Bucket Counts)</h6>
+            <canvas id="chartLine"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h6 class="mb-2">Pie Chart (Means)</h6>
+            <canvas id="chartPie"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button id="btnSave" class="btn btn-outline-primary" disabled>Save Prediction & Charts</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+<script>
+(function(){
+  let headers = [];
+  let inputsForSave = null;
+  let lastCharts = null;
+  let chartsInst = { bar: null, line: null, pie: null };
+  let encoderClasses = {};
+  let lastProbability = null;
+  let target = '';
+  let lastPayload = {};
+
+  function buildPredictForm(hdrs){
+    const form = document.getElementById('predictForm');
+    form.innerHTML = '';
+    const sel = document.getElementById('targetSelect');
+    const chosenTarget = (sel && sel.value) ? sel.value : (hdrs.length ? hdrs[hdrs.length-1] : '');
+    target = chosenTarget || '';
+    const isIdField = (name)=>{
+      const n = (name || '').toString();
+      const l = n.toLowerCase();
+      return l === 'student_id' || l === 'player_id' || l === 'plyer_id' || l === 'id' || l.endsWith('_id');
+    };
+    const isDateField = (name)=>{
+      const l = (name||'').toString().toLowerCase();
+      return l === 'date' || l.includes('date') || l.includes('datetime') || l.includes('timestamp');
+    };
+    const skip = new Set([target]);
+    const labelMap = {
+      'Age': 'Age',
+      'Gender': 'Gender (Male/Female)',
+      'Attendance_Percentage': 'Attendance Percentage',
+      'Assignment_Completion': 'Assignment Completion',
+      'Test_Score': 'Test Score',
+      'Family_Income': 'Family Income',
+      'Parental_Education': 'Parental Education',
+      'Access_to_Resources': 'Access to Resources (Yes/No)'
+    };
+    hdrs.forEach(h => {
+      if (skip.has(h) || isIdField(h) || isDateField(h)) return;
+      const group = document.createElement('div');
+      group.className = 'form-group';
+      const label = document.createElement('label');
+      label.textContent = labelMap[h] || h;
+      label.setAttribute('for', 'fld_'+h);
+      group.appendChild(label);
+      let input;
+      // If training returned encoder classes for this column, render a dropdown
+      const encOpts = (encoderClasses && encoderClasses[h]) ? encoderClasses[h] : null;
+      if (Array.isArray(encOpts) && encOpts.length){
+        input = document.createElement('select');
+        input.className = 'form-control';
+        input.id = 'fld_'+h;
+        input.required = true;
+        encOpts.forEach(v=>{ const o=document.createElement('option'); o.value=String(v); o.textContent=String(v); input.appendChild(o); });
+      } else if ((h||'').toString().toLowerCase()==='season'){
+        // Provide a friendly dropdown for season when not categorical-encoded
+        input = document.createElement('select');
+        input.className = 'form-control';
+        input.id = 'fld_'+h;
+        input.required = true;
+        const options = [
+          {v: '1', t: 'Winter'},
+          {v: '2', t: 'Spring'},
+          {v: '3', t: 'Summer'},
+          {v: '4', t: 'Autumn'}
+        ];
+        options.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.v; opt.textContent=o.t; input.appendChild(opt); });
+      } else if (h === 'Gender'){
+        input = document.createElement('select');
+        input.className = 'form-control';
+        input.id = 'fld_'+h;
+        input.required = true;
+        ['Male','Female'].forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; input.appendChild(o); });
+      } else if (h === 'Access_to_Resources'){
+        input = document.createElement('select');
+        input.className = 'form-control';
+        input.id = 'fld_'+h;
+        input.required = true;
+        ['Yes','No'].forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; input.appendChild(o); });
+      } else if (h === 'Parental_Education'){
+        input = document.createElement('select');
+        input.className = 'form-control';
+        input.id = 'fld_'+h;
+        input.required = true;
+        ['High School','Bachelors','Masters','PhD'].forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; input.appendChild(o); });
+      } else {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.step = 'any';
+        input.className = 'form-control';
+        input.id = 'fld_'+h;
+        input.required = true;
+      }
+      group.appendChild(input);
+      form.appendChild(group);
+    });
+    document.getElementById('btnPredict').disabled = false;
+    // Clear prior prediction whenever we rebuild the form
+    const box = document.getElementById('predictionBox');
+    box.style.display = 'none';
+    box.textContent = '';
+    document.getElementById('btnSave').disabled = true;
+    // Populate chart selectors
+    const available = hdrs.filter(h => !(h===target) && !isIdField(h) && !isDateField(h));
+    const chartSel = document.getElementById('chartFields');
+    const pieSel = document.getElementById('pieFields');
+    if (chartSel){ chartSel.innerHTML = available.map(h=>`<option value="${h}">${h}</option>`).join(''); }
+    if (pieSel){ pieSel.innerHTML = available.map(h=>`<option value="${h}">${h}</option>`).join(''); }
+  }
+
+  async function uploadForHeaders(){
+    const fileInput = document.getElementById('csvFile');
+    const btn = document.getElementById('btnUpload');
+    const prevHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Loading...'; }
+    if (!fileInput.files.length){
+      Swal.fire('Upload CSV', 'Please choose a CSV file first.', 'info');
+      if (btn) { btn.disabled = false; btn.innerHTML = prevHtml; }
+      return;
+    }
+    const fd = new FormData();
+    fd.append('file', fileInput.files[0]);
+    const resp = await fetch("{{ url_for('api_analyst_model_upload') }}", { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (!resp.ok){
+      Swal.fire('Error', data.error || 'Upload failed', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = prevHtml; }
+      return;
+    }
+    headers = data.headers || [];
+    // populate target selector
+    const sel = document.getElementById('targetSelect');
+    sel.innerHTML = '';
+    headers.forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h; opt.textContent = h; sel.appendChild(opt);
+    });
+    if (headers.length){ sel.value = headers[headers.length-1]; }
+    sel.disabled = headers.length === 0;
+    // Enable Train button now that headers are known; do not build the form yet
+    const trainBtn = document.getElementById('btnTrain');
+    if (trainBtn) trainBtn.disabled = (headers.length === 0);
+    // Do not build the form yet; wait for training to return feature_columns
+    document.getElementById('trainResult').style.display='none';
+    Swal.fire('Loaded', `Headers detected: ${headers.join(', ')}`, 'success');
+    if (btn) { btn.disabled = false; btn.innerHTML = prevHtml; }
+  }
+
+  async function trainModel(){
+    const fileInput = document.getElementById('csvFile');
+    const btn = document.getElementById('btnTrain');
+    const prevHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Training...'; }
+    if (!fileInput.files.length){
+      Swal.fire('Train Model', 'Please choose a CSV file first.', 'info');
+      if (btn) { btn.disabled = false; btn.innerHTML = prevHtml; }
+      return;
+    }
+    const fd = new FormData();
+    fd.append('file', fileInput.files[0]);
+    const sel = document.getElementById('targetSelect');
+    if (sel && sel.value) fd.append('target', sel.value);
+    const resp = await fetch("{{ url_for('api_analyst_model_train') }}", { method: 'POST', body: fd });
+    const data = await resp.json();
+    const box = document.getElementById('trainResult');
+    if (!resp.ok){
+      box.className = 'mt-3 alert alert-danger';
+      box.textContent = data.error || 'Training failed';
+      box.style.display = '';
+      if (btn) { btn.disabled = false; btn.innerHTML = prevHtml; }
+      return;
+    }
+    box.className = 'mt-3 alert alert-success';
+    const lc = data.label_counts || {};
+    const lr = data.label_ratio || {};
+    const va = (typeof data.val_accuracy === 'number') ? (data.val_accuracy*100).toFixed(2)+"%" : 'N/A';
+    encoderClasses = data.encoder_classes || {};
+    const encList = Object.entries(encoderClasses).map(([k,v])=>`<li><strong>${k}</strong>: ${Array.isArray(v)?v.join(', '):''}</li>`).join('');
+    box.innerHTML = `
+      <div><strong>${data.message || 'Model trained'}</strong> on <strong>${data.rows_used}</strong> rows.</div>
+      <div class="small mt-2">
+        <div><strong>Validation accuracy</strong>: ${va}</div>
+        <div><strong>Label counts</strong>: ${JSON.stringify(lc)}</div>
+        <div><strong>Label ratio</strong>: ${JSON.stringify(lr)}</div>
+        <div class="mt-1"><strong>Encoder classes</strong>:</div>
+        <ul class="mb-0">${encList}</ul>
+      </div>`;
+    box.style.display = '';
+    if (Array.isArray(data.feature_columns) && data.feature_columns.length){
+      headers = data.feature_columns;
+    }
+    // ensure select reflects target returned by API
+    if (data.target){
+      const sel2 = document.getElementById('targetSelect');
+      if (sel2){ sel2.value = data.target; }
+    }
+    // always rebuild to reflect encoder-driven dropdowns
+    buildPredictForm(headers);
+    // Clear any previous prediction
+    const pbox = document.getElementById('predictionBox');
+    pbox.style.display = 'none';
+    pbox.textContent = '';
+    document.getElementById('btnSave').disabled = true;
+    if (btn) { btn.disabled = false; btn.innerHTML = prevHtml; }
+  }
+
+  function renderCharts(config){
+    lastCharts = config || {};
+    const m = lastCharts.means || {labels: ['Attendance %','Assignment Completion','Test Score'], data: [0,0,0]};
+    // Normalize order to [Test Score, Assignment Completion, Attendance %]
+    const order = ['Test Score','Assignment Completion','Attendance %'];
+    const labelIdx = (name)=> (m.labels||[]).indexOf(name);
+    const barLabels = order;
+    const barData = order.map(n => {
+      const i = labelIdx(n);
+      return i >= 0 ? (m.data[i] || 0) : 0;
+    });
+    // Bar: simple averages
+    try{
+      const ctxB = document.getElementById('chartBar');
+      if (chartsInst.bar) chartsInst.bar.destroy();
+      chartsInst.bar = new Chart(ctxB, {
+        type: 'bar',
+        data: {
+          labels: barLabels,
+          datasets: [{ label: 'Average %', data: barData, backgroundColor: ['#FF6384','#4BC0C0','#36A2EB'] }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+      });
+    }catch(e){}
+    // Line: simple averages
+    try{
+      const ctxL = document.getElementById('chartLine');
+      if (chartsInst.line) chartsInst.line.destroy();
+      chartsInst.line = new Chart(ctxL, {
+        type: 'line',
+        data: {
+          labels: barLabels,
+          datasets: [{ label: 'Average %', data: barData, borderColor: '#7C3AED', backgroundColor: 'transparent' }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+      });
+    }catch(e){}
+    // Pie: means
+    try{
+      const ctxP = document.getElementById('chartPie');
+      if (chartsInst.pie) chartsInst.pie.destroy();
+      chartsInst.pie = new Chart(ctxP, {
+        type: 'pie',
+        data: {
+          labels: m.labels,
+          datasets: [{ data: m.data, backgroundColor: ['#36A2EB','#4BC0C0','#FF6384'] }]
+        },
+        options: { responsive: true }
+      });
+    }catch(e){}
+  }
+
+  function renderChartsFromForm(){
+    // Build labels and data from selected fields and current inputs
+    const chartSel = document.getElementById('chartFields');
+    const pieSel = document.getElementById('pieFields');
+    const selectedBar = Array.from((chartSel && chartSel.selectedOptions) || []).map(o=>o.value);
+    const selectedPie = Array.from((pieSel && pieSel.selectedOptions) || []).map(o=>o.value);
+    const inputs = {};
+    (headers||[]).forEach(h => {
+      const el = document.getElementById('fld_'+h);
+      if (!el) return;
+      const v = el.tagName === 'SELECT' ? el.value : el.value;
+      const num = parseFloat(v);
+      inputs[h] = Number.isFinite(num) ? num : 0;
+    });
+    lastPayload = inputs;
+    const barLabels = selectedBar.length ? selectedBar : Object.keys(inputs).slice(0,3);
+    const barData = barLabels.map(k => inputs[k] ?? 0);
+    // Bar
+    try{
+      const ctxB = document.getElementById('chartBar');
+      if (chartsInst.bar) chartsInst.bar.destroy();
+      chartsInst.bar = new Chart(ctxB, {
+        type: 'bar',
+        data: {
+          labels: barLabels,
+          datasets: [{ label: 'Values', data: barData, backgroundColor: ['#FF6384','#4BC0C0','#36A2EB','#F59E0B','#10B981','#EF4444'] }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+    }catch(e){}
+    // Line
+    try{
+      const ctxL = document.getElementById('chartLine');
+      if (chartsInst.line) chartsInst.line.destroy();
+      chartsInst.line = new Chart(ctxL, {
+        type: 'line',
+        data: {
+          labels: barLabels,
+          datasets: [{ label: 'Values', data: barData, borderColor: '#7C3AED', backgroundColor: 'transparent' }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+    }catch(e){}
+    // Pie
+    try{
+      const ctxP = document.getElementById('chartPie');
+      if (chartsInst.pie) chartsInst.pie.destroy();
+      const pieLabels = (selectedPie.length ? selectedPie : barLabels);
+      const pieData = pieLabels.map(k => inputs[k] ?? 0);
+      chartsInst.pie = new Chart(ctxP, {
+        type: 'pie',
+        data: {
+          labels: pieLabels,
+          datasets: [{ data: pieData, backgroundColor: ['#36A2EB','#4BC0C0','#FF6384','#F59E0B','#10B981','#EF4444'] }]
+        },
+        options: { responsive: true }
+      });
+    }catch(e){}
+    // Save a light snapshot for backend persistence
+    lastCharts = {
+      bar: { labels: barLabels, data: barData },
+      line: { labels: barLabels, data: barData },
+      pie: { labels: (selectedPie.length ? selectedPie : barLabels), data: (selectedPie.length ? selectedPie : barLabels).map(k => inputs[k] ?? 0) },
+      inputs: inputs
+    };
+  }
+
+  async function doPredict(){
+    if (!headers.length){
+      Swal.fire('No headers', 'Upload CSV and load headers first.', 'info');
+      return;
+    }
+    const payload = {};
+    const isIdField = (name)=>{
+      const n = (name || '').toString();
+      const l = n.toLowerCase();
+      return l === 'student_id' || l === 'player_id' || l === 'plyer_id' || l === 'id' || l.endsWith('_id');
+    };
+    const isDateField = (name)=>{
+      const l = (name||'').toString().toLowerCase();
+      return l === 'date' || l.includes('date') || l.includes('datetime') || l.includes('timestamp');
+    };
+    headers.forEach(h => {
+      if (isIdField(h) || isDateField(h) || h===target) return;
+      const el = document.getElementById('fld_'+h);
+      if (!el) return;
+      payload[h] = el.value;
+    });
+    // Validate required fields
+    const required = ['Age','Gender','Attendance_Percentage','Assignment_Completion','Test_Score','Family_Income','Parental_Education','Access_to_Resources']
+      .filter(f=>headers.includes(f) && !isIdField(f) && !isDateField(f) && f!==target);
+    const missing = required.filter(f => {
+      const v = (payload[f] ?? '').toString().trim();
+      return v === '' || v.toLowerCase() === 'nan';
+    });
+    if (missing.length){
+      Swal.fire('Missing fields', `Please fill: ${missing.join(', ')}`, 'warning');
+      return;
+    }
+    inputsForSave = JSON.parse(JSON.stringify(payload));
+    const resp = await fetch("{{ url_for('api_analyst_model_predict') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    const box = document.getElementById('predictionBox');
+    if (!resp.ok){
+      box.className = 'alert alert-danger mt-3';
+      box.textContent = data.error || 'Prediction failed';
+      box.style.display = '';
+      return;
+    }
+    const cls = (typeof data.prediction === 'string' && /drop/i.test(data.prediction)) ? 'alert-danger' : 'alert-success';
+    box.className = `alert ${cls} mt-3`;
+    const probText = (typeof data.probability === 'number') ? ` &nbsp; <small class="text-muted">(prob: ${Number(data.probability).toFixed(3)})</small>` : '';
+    let tgtHtml = '';
+    if (typeof data.target === 'string' && data.target.trim()){
+      const t = data.target.trim();
+      let badge = 'badge bg-secondary';
+      const tl = t.toLowerCase();
+      if (tl.includes('drop')) badge = 'badge bg-danger';
+      else if (tl.includes('price')) badge = 'badge bg-info text-dark';
+      else if (tl.includes('salary')) badge = 'badge bg-success';
+      tgtHtml = ` &nbsp; <span class="${badge}"><strong>${t}</strong></span>`;
+    }
+    // Outcome mapping for binary targets: 0 -> Continue, 1 -> Dropout
+    let outcomeHtml = '';
+    try{
+      const predNum = Number(data.prediction);
+      const isBinaryNum = Number.isFinite(predNum) && (predNum === 0 || predNum === 1);
+      const isBinaryResp = !!data.is_binary;
+      if (isBinaryNum || isBinaryResp){
+        const label = predNum === 1 ? 'Dropout' : 'Continue';
+        const cls = predNum === 1 ? 'badge bg-danger' : 'badge bg-success';
+        outcomeHtml = ` &nbsp; <span class="${cls}"><strong>${label}</strong></span>`;
+        tgtHtml = '';
+      }
+    }catch(e){}
+    // Build formatted prediction string for display
+    let displayPred = data.prediction;
+    try{
+      const tl = (data.target || '').toString().toLowerCase();
+      const isMoney = /salary|price/.test(tl);
+      const num = Number(data.prediction);
+      const isNum = Number.isFinite(num);
+      const isBinaryNum = isNum && (num === 0 || num === 1);
+      const isBinaryResp = !!data.is_binary;
+      if (isNum){
+        if (isBinaryNum || (tl.includes('drop') && isBinaryNum) || (isBinaryResp && isBinaryNum)){
+          displayPred = String(num); // keep 0/1 for binary targets
+        } else if (isMoney){
+          displayPred = String(Math.round(num));
+        } else {
+          displayPred = num.toFixed(2);
+        }
+      }
+    }catch(_){ }
+    box.innerHTML = `<strong>Prediction:</strong> ${displayPred}${probText}${tgtHtml}${outcomeHtml}`;
+    box.style.display = '';
+    lastProbability = data.probability;
+    lastTarget = data.target;
+    // Build charts from current form values based on selections
+    renderChartsFromForm();
+    document.getElementById('btnSave').disabled = false;
+  }
+
+  async function doSave(){
+    if (!inputsForSave || !lastCharts){
+      Swal.fire('Nothing to save', 'Make a prediction first.', 'info');
+      return;
+    }
+    const predText = document.getElementById('predictionBox').textContent || '';
+    const pred = /Prediction:\s*([^\(]+)/.exec(predText);
+    const prediction = pred ? pred[1].trim() : '';
+    const resp = await fetch("{{ url_for('api_analyst_model_save') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prediction, charts: lastCharts, inputs: inputsForSave, probability: lastProbability, target: lastTarget })
+    });
+    const data = await resp.json();
+    if (!resp.ok){
+      Swal.fire('Error', data.error || 'Save failed', 'error');
+      return;
+    }
+    Swal.fire('Saved', 'Prediction and charts saved.', 'success');
+  }
+
+  // Buttons perform independent actions (no auto train)
+  document.getElementById('btnUpload').addEventListener('click', uploadForHeaders);
+  document.getElementById('btnTrain').addEventListener('click', trainModel);
+  // On CSV select, only clear previous prediction and wait for explicit button clicks
+  const csvEl = document.getElementById('csvFile');
+  if (csvEl){
+    csvEl.addEventListener('change', function(){
+      const box = document.getElementById('predictionBox');
+      box.style.display = 'none';
+      box.textContent = '';
+      document.getElementById('btnSave').disabled = true;
+      const trainBtn = document.getElementById('btnTrain');
+      if (trainBtn) trainBtn.disabled = true; // require explicit header load
+      const sel = document.getElementById('targetSelect');
+      if (sel){ sel.disabled = true; sel.innerHTML = ''; }
+    });
+  }
+  document.getElementById('btnPredict').addEventListener('click', doPredict);
+  document.getElementById('btnSave').addEventListener('click', doSave);
+  const tgtSel = document.getElementById('targetSelect');
+  if (tgtSel){
+    tgtSel.addEventListener('change', function(){
+      buildPredictForm(headers);
+    });
+  }
+  // Re-render charts when selection changes
+  const chartSel = document.getElementById('chartFields');
+  const pieSel = document.getElementById('pieFields');
+  if (chartSel){ chartSel.addEventListener('change', renderChartsFromForm); }
+  if (pieSel){ pieSel.addEventListener('change', renderChartsFromForm); }
+})();
+</script>
+{% endblock %}

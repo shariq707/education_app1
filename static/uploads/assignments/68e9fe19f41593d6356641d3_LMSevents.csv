@@ -1,0 +1,3 @@
+event_id,student_id,course_code,event_type,event_time
+1,S001,cs101,login,9:15:00 AM
+2,S002,cs102,quiz,11:40:00 AM

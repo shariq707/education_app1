@@ -1,0 +1,47 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2>Admin Notifications</h2>
+<p class="text-muted">Latest system and analyst activity alerts.</p>
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead>
+        <tr>
+          <th scope="col">Created</th>
+          <th scope="col">Type</th>
+          <th scope="col">Analyst</th>
+          <th scope="col">Email</th>
+          <th scope="col">Model</th>
+          <th scope="col">Rows Used</th>
+          <th scope="col">Val. Accuracy</th>
+          <th scope="col">Message</th>
+          <th scope="col" class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if items %}
+          {% for it in items %}
+            <tr>
+              <td>{% if it.created_at %}{{ it.created_at.strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}</td>
+              <td>{{ it.type }}</td>
+              <td>{{ it.analyst }}</td>
+              <td>{{ it.analyst_email }}</td>
+              <td>{{ it.model_type }}</td>
+              <td>{{ it.rows_used }}</td>
+              <td>{% if it.val_accuracy is not none %}{{ (it.val_accuracy | float) | round(3) }}{% endif %}</td>
+              <td>{{ it.message }}</td>
+              <td class="text-end">
+                <form method="post" action="{{ url_for('admin_notifications_delete', nid=it.id) }}" onsubmit="return confirm('Delete this notification?');">
+                  <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="9" class="text-center text-muted">No notifications.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

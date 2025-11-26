@@ -1,0 +1,66 @@
+<!-- 
+<h1>Welcome Teacher, {{ user }}</h1>
+<p>This is Teacher Dashboard</p> -->
+
+
+
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2>Teacher Dashboard</h2>
+<div class="row">
+  <div class="col-md-6">
+    <div class="card text-bg-info mb-3">
+      <div class="card-body">
+        <h5 class="card-title">My Courses</h5>
+        <p class="card-text">Create, update, and manage your courses.</p>
+        <a href="{{ url_for('teacher_courses') }}" class="btn btn-light">Open</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-secondary mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Assignments</h5>
+        <p class="card-text">Upload or review student assignments.</p>
+        <a href="{{ url_for('teacher_assignments') }}" class="btn btn-light">Open</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-warning mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Students</h5>
+        <p class="card-text">View students in your courses and approve/decline pending requests.</p>
+        <a href="{{ url_for('teacher_students') }}" class="btn btn-light">Manage</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-success mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Evaluate Submissions</h5>
+        <p class="card-text">Grade student work and leave feedback.</p>
+        <a href="{{ url_for('teacher_evaluate') }}" class="btn btn-light">Open</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-primary mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Announcements</h5>
+        <p class="card-text">Post updates for your courses.</p>
+        <a href="{{ url_for('teacher_announcements') }}" class="btn btn-light">Open</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-dark mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Profile</h5>
+        <p class="card-text">Update your details and specialization.</p>
+        <a href="{{ url_for('teacher_profile_page') }}" class="btn btn-light">Open</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

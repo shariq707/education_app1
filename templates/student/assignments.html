@@ -1,0 +1,38 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3>Assignments</h3>
+<p>Assignments for your enrolled courses.</p>
+<div class="mt-3">
+  {% if assignments and assignments|length > 0 %}
+    <ul class="list-group">
+      {% for a in assignments %}
+        <li class="list-group-item">
+          <div class="text-muted small">{{ a.course_code }}{% if a.course_title %} — {{ a.course_title }}{% endif %}</div>
+          <div class="fw-bold">{{ a.title or ('Assignment ' ~ loop.index) }}</div>
+          {% if a.description %}<div class="text-muted">{{ a.description }}</div>{% endif %}
+          <div class="small text-muted">{% if a.deadline %}Due: {{ a.deadline }}{% endif %}</div>
+          {% if a.has_attachment %}
+            <div class="small">
+              Attachment: <a href="{{ url_for('assignment_download', aid=a._id) }}">{{ a.attachment_name or 'Download' }}</a>
+            </div>
+          {% endif %}
+          <div class="mt-2">
+            <form method="post" action="{{ url_for('student_submissions') }}" enctype="multipart/form-data" class="row g-2 align-items-center">
+              <input type="hidden" name="assignment_id" value="{{ a._id }}" />
+              <div class="col-md-8">
+                <input type="file" class="form-control form-control-sm" name="file" required />
+              </div>
+              <div class="col-md-4 d-flex justify-content-end">
+                <button type="submit" class="btn btn-sm btn-primary">Submit</button>
+              </div>
+            </form>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="alert alert-info">No assignments found.</div>
+  {% endif %}
+</div>
+<a href="{{ url_for('student_submissions') }}" class="btn btn-secondary btn-sm mt-3">Go to Submissions</a>
+{% endblock %}

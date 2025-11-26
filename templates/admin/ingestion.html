@@ -1,0 +1,138 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2>Data Ingestion</h2>
+<p class="text-muted">Upload historical CSVs for supported datasets.</p>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">CSV Upload (Historical)</div>
+      <div class="card-body">
+        <form id="csvForm">
+          <div class="mb-3">
+            <label for="csvDataset" class="form-label">Dataset</label>
+            <select id="csvDataset" class="custom-select" required>
+              <option value="">Select dataset</option>
+              <option value="academic_records">Academic Records</option>
+              <option value="demographics">Demographics</option>
+              <option value="lms">LMS Events</option>
+              <option value="attendance">Attendance</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="csvFile" class="form-label">CSV File</label>
+            <input id="csvFile" name="file" type="file" accept=".csv" class="form-control" required />
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" value="1" id="csvDownload">
+            <label class="form-check-label" for="csvDownload">
+              Download cleaned CSV
+            </label>
+          </div>
+          <button class="btn btn-primary" type="submit">Upload CSV</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">Cleaned Dataset Preview</div>
+  <div class="card-body">
+    <div id="tableInfo" class="text-muted small mb-2"></div>
+    <div class="table-responsive">
+      <table class="table table-striped table-sm" id="cleanTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+(function(){
+  const infoEl = document.getElementById('tableInfo');
+  function setInfo(msg){
+    if (infoEl) infoEl.textContent = msg || '';
+  }
+
+  function renderTable(data){
+    const table = document.getElementById('cleanTable');
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    const info = document.getElementById('tableInfo');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+    info.textContent = '';
+    if(!data || !data.headers || !data.rows){
+      info.textContent = 'No cleaned data returned.';
+      return;
+    }
+    const headers = data.headers;
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    // Build header
+    const trHead = document.createElement('tr');
+    headers.forEach(h => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    // Build body (limit to 200 for performance)
+    const limit = Math.min(200, rows.length);
+    for(let i=0;i<limit;i++){
+      const r = rows[i];
+      const tr = document.createElement('tr');
+      headers.forEach(h => {
+        const td = document.createElement('td');
+        const val = r[h];
+        td.textContent = (val === undefined || val === null) ? '' : String(val);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    }
+    if(rows.length > limit){
+      info.textContent = `Showing ${limit} of ${rows.length} rows.`;
+    } else {
+      info.textContent = `Showing ${rows.length} rows.`;
+    }
+  }
+
+  document.getElementById('csvForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ds = document.getElementById('csvDataset').value;
+    const fileInput = document.getElementById('csvFile');
+    const wantDownload = document.getElementById('csvDownload').checked;
+    if(!ds || !fileInput.files.length){
+      setInfo('Dataset and CSV file are required');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    if (wantDownload) formData.append('download', '1');
+    try {
+      const url = `/ingest/csv_clean/${ds}`;
+      const res = await fetch(url, { method: 'POST', body: formData });
+      const contentType = res.headers.get('Content-Type') || '';
+      if (wantDownload && contentType.includes('text/csv')) {
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${ds}_cleaned.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setInfo('Downloaded cleaned CSV.');
+        renderTable(null);
+      } else {
+        const data = await res.json();
+        renderTable(data && data.data);
+      }
+    } catch(err){
+      setInfo('Error: ' + String(err));
+    }
+  });
+})();
+</script>
+{% endblock %}

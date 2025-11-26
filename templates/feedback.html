@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block breadcrumbs %}
+<div class="bg-light py-2">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Feedback</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header">We value your feedback</div>
+      <div class="card-body">
+        {% if message %}
+          <div class="alert alert-info">{{ message }}</div>
+        {% endif %}
+        <form method="post" action="{{ url_for('feedback') }}">
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="fbName">Name</label>
+              <input type="text" class="form-control" id="fbName" name="name" placeholder="Your name" value="{{ session.get('user') or '' }}">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="fbEmail">Email</label>
+              <input type="email" class="form-control" id="fbEmail" name="email" placeholder="you@example.com" value="{{ session.get('email') or '' }}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fbMessage">Message</label>
+            <textarea class="form-control" id="fbMessage" name="message" rows="5" placeholder="Write your feedback here..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Send Feedback</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

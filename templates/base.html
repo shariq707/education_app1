@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>EduPortal</title>
+  <!-- Bootstrap 4.5.3 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css">
+  <!-- Font Awesome CSS (replace blocked kit JS) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    (function(){
+      var t = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <!-- Preloader -->
+  <div id="preloader">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('home') }}">
+        <i class="fas fa-graduation-cap mr-1"></i> EduPortal
+      </a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navmenu" aria-controls="navmenu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navmenu">
+        {% set current = request.endpoint %}
+        <ul class="navbar-nav ml-auto align-items-lg-center">
+          <li class="nav-item my-1 my-lg-0">
+            <a class="btn btn-sm mx-1 {{ 'btn-light text-primary font-weight-bold' if current=='home' else 'btn-outline-light' }}" href="{{ url_for('home') }}">
+              <i class="fas fa-home mr-1"></i> Home
+            </a>
+          </li>
+          <li class="nav-item my-1 my-lg-0">
+            <a class="btn btn-sm mx-1 {{ 'btn-light text-primary font-weight-bold' if current=='services' else 'btn-outline-light' }}" href="{{ url_for('services') }}">
+              <i class="fas fa-concierge-bell mr-1"></i> Services
+            </a>
+          </li>
+          <li class="nav-item my-1 my-lg-0">
+            <a class="btn btn-sm mx-1 {{ 'btn-light text-primary font-weight-bold' if current=='our_team' else 'btn-outline-light' }}" href="{{ url_for('our_team') }}">
+              <i class="fas fa-users mr-1"></i> Our Team
+            </a>
+          </li>
+          <li class="nav-item my-1 my-lg-0">
+            <a class="btn btn-sm mx-1 {{ 'btn-light text-primary font-weight-bold' if current=='login' else 'btn-outline-light' }}" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt mr-1"></i> Login</a>
+          </li>
+          <li class="nav-item my-1 my-lg-0">
+            <a class="btn btn-sm mx-1 {{ 'btn-light text-primary font-weight-bold' if current=='signup' else 'btn-outline-light' }}" href="{{ url_for('signup') }}"><i class="fas fa-user-plus mr-1"></i> Signup</a>
+          </li>
+          <li class="nav-item my-1 my-lg-0">
+            <button id="themeToggle" type="button" class="btn btn-outline-light btn-sm mx-1" aria-label="Toggle theme"></button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section (optional per-page) -->
+  {% block hero %}{% endblock %}
+
+  <!-- Breadcrumbs (optional per-page) -->
+  {% block breadcrumbs %}{% endblock %}
+
+  <!-- Main Content -->
+  <!-- Flash Toasts -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <!-- Fallback alerts (non-JS only) -->
+  <noscript>
+    <div class="container mt-3">
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'danger' if category=='danger' else category }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  </noscript>
+  <script>
+    // Expose flashes for SweetAlert popups
+    window.__flashes = {{ messages|tojson|safe }};
+  </script>
+  {% endif %}
+  {% endwith %}
+
+  <main class="flex-grow-1">
+    <div class="container my-5">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer bg-dark text-light pt-5 mt-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4 mb-4">
+          <h5>About EduPortal</h5>
+          <p class="small">A modern, responsive platform for better online education services with clean, SEO-friendly code.</p>
+          <div class="social-links">
+            <a href="https://www.facebook.com/login/" target="_blank" rel="noopener noreferrer" class="text-light mr-3"><span class="sr-only">Facebook</span><i class="fab fa-facebook"></i></a>
+            <a href="https://twitter.com/i/flow/login" target="_blank" rel="noopener noreferrer" class="text-light mr-3"><span class="sr-only">Twitter</span><i class="fab fa-twitter"></i></a>
+            <a href="https://www.linkedin.com/login" target="_blank" rel="noopener noreferrer" class="text-light"><span class="sr-only">LinkedIn</span><i class="fab fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="col-md-4 mb-4">
+          <h5>Quick Links</h5>
+          <ul class="list-unstyled small">
+            <li><a class="text-light" href="{{ url_for('home') }}">Home</a></li>
+            <li><a class="text-light" href="{{ url_for('services') }}">Services</a></li>
+            <li><a class="text-light" href="{{ url_for('feedback') }}">Feedback</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4 mb-4">
+          <h5>Newsletter</h5>
+          <form class="form-inline" onsubmit="event.preventDefault(); alert('Thank you for subscribing!');">
+            <div class="input-group mb-2 mr-sm-2">
+              <input type="email" class="form-control" placeholder="Your email">
+              <div class="input-group-append">
+                <button type="submit" class="btn btn-warning">Subscribe</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="text-center small py-3 border-top border-secondary">© {{ 2025 }} EduPortal. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <!-- Back to Top -->
+  <a href="#" id="backToTop" class="back-to-top btn btn-primary btn-lg" role="button" aria-label="Back to top">↑</a>
+
+  <button id="chatbotLaunch" class="btn btn-primary chatbot-launch" type="button" aria-label="Open AI chatbot">
+    <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
+      <defs>
+        <linearGradient id="botGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#19e0ff"/>
+          <stop offset="100%" stop-color="#3be37a"/>
+        </linearGradient>
+        <filter id="botShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+      <!-- Head -->
+      <rect x="8" y="10" rx="18" ry="18" width="48" height="42" fill="url(#botGrad)" filter="url(#botShadow)"/>
+      <!-- Antenna -->
+      <rect x="30" y="4" width="4" height="8" rx="2" fill="#19e0ff"/>
+      <circle cx="32" cy="2" r="2" fill="#7fffd4"/>
+      <!-- Visor -->
+      <rect x="16" y="20" width="32" height="16" rx="8" fill="#0b1320"/>
+      <!-- Eyes -->
+      <circle cx="26" cy="28" r="4" fill="#0b1320" stroke="#7fffd4" stroke-width="2"/>
+      <circle cx="38" cy="28" r="4" fill="#0b1320" stroke="#7fffd4" stroke-width="2"/>
+      <circle cx="25" cy="27" r="1.2" fill="#ffffff"/>
+      <circle cx="37" cy="27" r="1.2" fill="#ffffff"/>
+      <!-- Smile -->
+      <path d="M24 38 Q32 42 40 38" fill="none" stroke="#0b1320" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <div id="chatbotPanel" class="chatbot-panel">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>AI Study Chatbot</span>
+        <button id="chatbotClose" class="btn btn-sm btn-outline-secondary" type="button" aria-label="Close">✖</button>
+      </div>
+      <div class="card-body">
+        <div id="chatbotMessages" class="chatbot-messages mb-2"></div>
+        <div class="input-group">
+          <input id="chatbotInput" type="text" class="form-control" placeholder="Ask about study plans, GPA trend, services...">
+          <div class="input-group-append">
+            <button id="chatbotSend" class="btn btn-primary" type="button">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS: jQuery, Popper, Bootstrap 4 (without SRI to avoid blocking) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
+  <!-- SweetAlert2 for popups -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // Preloader hide on load
+    $(window).on('load', function(){
+      $('#preloader').fadeOut(300);
+    });
+    // SweetAlert popups for flash messages (sequential with dismiss options)
+    $(async function(){
+      if (window.__flashes && window.__flashes.length){
+        for (const item of window.__flashes){
+          var category = item[0] || 'info';
+          var msg = item[1] || '';
+          var icon = category === 'danger' ? 'error' : (category === 'success' ? 'success' : (category === 'warning' ? 'warning' : 'info'));
+          await Swal.fire({
+            icon: icon,
+            title: msg,
+            confirmButtonText: 'OK',
+            showCloseButton: true,
+            allowOutsideClick: true,
+            allowEscapeKey: true,
+            timer: 5000,
+            timerProgressBar: true
+          });
+        }
+      }
+    });
+    // Back to top
+    $(window).on('scroll', function(){
+      if ($(this).scrollTop() > 200) { $('#backToTop').fadeIn(); } else { $('#backToTop').fadeOut(); }
+    });
+    $('#backToTop').on('click', function(e){ e.preventDefault(); $('html, body').animate({scrollTop:0}, 500); });
+    (function(){
+      function applyLabel(t){
+        var btn = document.getElementById('themeToggle');
+        if(!btn) return;
+        var isDark = (t === 'dark');
+        btn.innerText = isDark ? '☀️' : '🌙';
+        btn.title = isDark ? 'Switch to light' : 'Switch to dark';
+      }
+      var current = document.documentElement.getAttribute('data-theme') || 'light';
+      applyLabel(current);
+      var el = document.getElementById('themeToggle');
+      if (el){
+        el.addEventListener('click', function(){
+          var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', t);
+          localStorage.setItem('theme', t);
+          applyLabel(t);
+        });
+      }
+      function addMsg(role, html){
+        var box = document.getElementById('chatbotMessages');
+        if(!box) return;
+        var div = document.createElement('div');
+        div.className = 'chatbot-msg ' + (role === 'user' ? 'user' : 'bot');
+        div.innerHTML = html;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+      }
+      function svgLine(){
+        return '<div class="viz" style="max-width:320px;margin:0 auto;"><svg viewBox="0 0 320 180" width="100%" height="180" role="img"><rect x="0" y="0" width="320" height="180" fill="var(--card-bg)" rx="6"/><g transform="translate(40,10)"><line x1="0" y1="150" x2="240" y2="150" stroke="var(--card-border)"/><polyline fill="none" stroke="#0d6efd" stroke-width="3" points="0,140 48,120 96,110 144,95 192,90 240,80"/><circle cx="0" cy="140" r="3" fill="#0d6efd"/><circle cx="48" cy="120" r="3" fill="#0d6efd"/><circle cx="96" cy="110" r="3" fill="#0d6efd"/><circle cx="144" cy="95" r="3" fill="#0d6efd"/><circle cx="192" cy="90" r="3" fill="#0d6efd"/><circle cx="240" cy="80" r="3" fill="#0d6efd"/><text x="0" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T1</text><text x="48" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T2</text><text x="96" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T3</text><text x="144" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T4</text><text x="192" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T5</text><text x="240" y="165" text-anchor="middle" font-size="12" fill="var(--text)">T6</text></g></svg></div>';
+      }
+      function svgPie(){
+        return '<div class="viz" style="max-width:260px;margin:0 auto;"><svg viewBox="0 0 180 180" width="100%" height="180" role="img"><circle cx="90" cy="90" r="80" fill="var(--card-bg)"/><path d="M90,90 L90,10 A80,80 0 0,1 164,118 Z" fill="#0d6efd"></path><path d="M90,90 L164,118 A80,80 0 0,1 42,150 Z" fill="#28a745"></path><path d="M90,90 L42,150 A80,80 0 0,1 90,10 Z" fill="#ffc107"></path></svg></div>';
+      }
+      function studyPlan(hours){
+        var h = Math.max(1, Math.min(12, parseInt(hours||'4',10)||4));
+        var block = Math.max(25, Math.min(60, Math.round((h*60)/(h>4?(h-1):h))));
+        var brk = 10;
+        return 'Suggested ' + h + '-hour plan: ' + block + ' min focus × ' + h + ' sessions, ' + brk + ' min breaks. Use the last 20 min for recap.';
+      }
+      // Simple study-topic knowledge base (concise, neutral)
+      var TOPIC_ANS = [
+        { keys:['what is computer','computer'], ans:'A computer is an electronic device that processes data according to instructions (programs). Core parts: input (keyboard, mouse), processing (CPU, memory), storage (SSD/HDD), output (monitor, printer). It represents data in bits (0/1) and executes algorithms to solve problems.' },
+        { keys:['education is important','importance of education','why education'], ans:'Education develops knowledge, skills, and values. It improves critical thinking, employability, health outcomes, civic participation, and economic growth. For learners, a study routine (goal -> plan -> practice -> feedback) accelerates progress.' },
+        { keys:['math','mathematics','algebra','calculus','geometry'], ans:'Mathematics studies patterns, quantities, and structures. Key branches: Algebra (symbols, equations), Geometry (shapes, space), Calculus (change, derivatives/integrals), Probability & Statistics (uncertainty, inference). Practice by solving graded problems and reviewing errors.' },
+        { keys:['physics','mechanics','electricity','optics'], ans:'Physics explains natural laws from motion to energy. Core areas: Mechanics (forces, Newton’s laws), Thermodynamics (heat, entropy), Electromagnetism (charges, fields, circuits), Waves & Optics (interference, lenses). Use units carefully and draw free-body diagrams.' },
+        { keys:['chemistry','organic','inorganic','stoichiometry','periodic'], ans:'Chemistry studies matter and reactions. Concepts: Atomic structure, Periodic trends, Bonding, Stoichiometry, Thermochemistry, Kinetics, Equilibrium, Acids‑bases, Organic functional groups. Balance equations and track moles and limiting reagents.' },
+        { keys:['biology','cell','genetics','ecology','physiology'], ans:'Biology examines living systems. Themes: Cell structure and energy (ATP), Genetics (DNA -> RNA -> protein, inheritance), Evolution & Ecology (adaptation, populations), Physiology (organ systems). Draw pathways and compare structures/functions.' },
+        { keys:['statistics','stat','probability','inference','regression'], ans:'Statistics turns data into insight. Pipeline: describe (mean, median, spread), visualize, model (probability, distributions), infer (confidence intervals, hypothesis tests), predict (regression/classification). Always check assumptions and outliers.' }
+      ];
+
+      function reply(q){
+        var s = (q||'').toString().trim().toLowerCase();
+        if(!s){ addMsg('bot','Ask about study plans, GPA trend, time allocation, or site pages like services, team, login, signup.'); return; }
+        if (/(hi|hello|hey)/.test(s)) { addMsg('bot','Hello!'); addMsg('bot','How may I help you?'); return; }
+        // Website overview
+        if (s.includes('website') || s.includes('site') || s.includes('eduportal')){
+          // Full description when user explicitly asks to "describe/descript the website"
+          var wantsFull = /(describe|descript|description).*\b(website|site)\b/.test(s) || /\b(describe|descript)\b/.test(s);
+          if (wantsFull){
+            var full = ''+
+              '<div class="mb-2">EduPortal is a modern, responsive education platform that supports multiple roles and learning workflows.</div>'+
+              '<ul class="small mb-2">'+
+                '<li><b>Public pages:</b> <a href="' + "{{ url_for('home') }}" + '">Home</a>, <a href="' + "{{ url_for('services') }}" + '">Services</a>, <a href="' + "{{ url_for('our_team') }}" + '">Our Team</a>, <a href="' + "{{ url_for('feedback') }}" + '">Feedback</a></li>'+
+                '<li><b>Auth:</b> <a href="' + "{{ url_for('signup') }}" + '">Signup</a> and <a href="' + "{{ url_for('login') }}" + '">Login</a> with password reset via email code.</li>'+
+                '<li><b>Dashboards (after login):</b> Admin, Teacher, Student, Analyst — each with relevant data and actions.</li>'+
+                '<li><b>Data & features:</b> CSV ingestion, course/enrollment management, assignments/submissions, results tracking, feedback inbox, and prediction/model records.</li>'+
+                '<li><b>UI helpers:</b> theme toggle (light/dark), preloader, back-to-top, SweetAlert toasts, and this AI chatbot.</li>'+
+              '</ul>'+
+              '<div class="small"><b>Quick navigation:</b> '+
+                '<a href="' + "{{ url_for('home') }}" + '">Home</a> · '+
+                '<a href="' + "{{ url_for('services') }}" + '">Services</a> · '+
+                '<a href="' + "{{ url_for('our_team') }}" + '">Our Team</a> · '+
+                '<a href="' + "{{ url_for('login') }}" + '">Login</a> · '+
+                '<a href="' + "{{ url_for('signup') }}" + '">Signup</a> · '+
+                '<a href="' + "{{ url_for('feedback') }}" + '">Feedback</a>'+
+              '</div>';
+            addMsg('bot', full); return;
+          }
+          // Short summary + quick links
+          var msg = 'EduPortal is a modern learning platform for students, teachers, admins, and analysts.'+
+            '<div class="mt-1 small">Quick links: '+
+            '<a href="' + "{{ url_for('home') }}" + '">Home</a> · '+
+            '<a href="' + "{{ url_for('services') }}" + '">Services</a> · '+
+            '<a href="' + "{{ url_for('our_team') }}" + '">Our Team</a> · '+
+            '<a href="' + "{{ url_for('login') }}" + '">Login</a> · '+
+            '<a href="' + "{{ url_for('signup') }}" + '">Signup</a> · '+
+            '<a href="' + "{{ url_for('feedback') }}" + '">Feedback</a></div>';
+          addMsg('bot', msg); return; }
+        if(s.includes('service')){ addMsg('bot','EduPortal offers Services, Teacher Resources, Student Progress Tracking, and Data Analysis.'); return; }
+        // Roles
+        if (/\bstudent\b/.test(s)){
+          addMsg('bot', 'Student role: enroll in courses, submit assignments, see grades, and track progress with charts. Use Signup to create an account, then Login to your Student Dashboard.');
+          return;
+        }
+        if (/\bteacher(s)?\b/.test(s)){
+          addMsg('bot', 'Teacher role: create/manage courses, post assignments, manage rosters, and share announcements. Login to access the Teacher Dashboard.');
+          return;
+        }
+        if (/\banalyst\b/.test(s)){
+          addMsg('bot', 'Analyst role: review datasets, create manual predictions, and share model/training updates with admins. Login to access the Analyst Dashboard.');
+          return;
+        }
+        if(s.includes('team')){ addMsg('bot','Open the Our Team page to see members and roles.'); return; }
+        if(s.includes('login')){ addMsg('bot','Go to the Login page to sign in.'); return; }
+        if(s.includes('signup') || s.includes('register')){ addMsg('bot','Use the Signup page to create your account.'); return; }
+        if(s.includes('gpa') || s.includes('trend')){ addMsg('bot', svgLine()); return; }
+        if(s.includes('time') && (s.includes('pie') || s.includes('allocation'))){ addMsg('bot', svgPie()); return; }
+        if(s.includes('study plan') || s.includes('schedule')){ addMsg('bot', studyPlan(s.match(/(\d+)/)&&RegExp.$1)); return; }
+        // Topic answers
+        for (var i=0;i<TOPIC_ANS.length;i++){
+          var t = TOPIC_ANS[i];
+          for (var j=0;j<t.keys.length;j++){
+            if (s.includes(t.keys[j])) { addMsg('bot', t.ans); return; }
+          }
+        }
+        addMsg('bot','I answer study topics (math, physics, chemistry, biology, statistics, computer basics) and website info only. Try asking: "What is computer?" or "education is important".');
+      }
+      var launch = document.getElementById('chatbotLaunch');
+      var panel = document.getElementById('chatbotPanel');
+      var closeBtn = document.getElementById('chatbotClose');
+      var sendBtn = document.getElementById('chatbotSend');
+      var input = document.getElementById('chatbotInput');
+      if(launch && panel){
+        launch.addEventListener('click', function(){ panel.style.display = (panel.style.display==='block'?'none':'block'); if(panel.style.display==='block'){ input&&input.focus(); }});
+      }
+      if(closeBtn){ closeBtn.addEventListener('click', function(){ panel.style.display='none'; }); }
+      function send(){ var v = (input&&input.value)||''; if(!v.trim()) return; addMsg('user', v); if(input) input.value=''; reply(v); }
+      if(sendBtn){ sendBtn.addEventListener('click', send); }
+      if(input){ input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); send(); }}); }
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

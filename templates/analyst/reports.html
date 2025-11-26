@@ -1,0 +1,207 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2>Data Reports</h2>
+<p class="text-muted">Saved ML predictions, organized by model/target. Choose a model to view its predictions with relevant columns only.</p>
+
+<ul class="nav nav-pills mb-3">
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if not selected_target else '' }}" href="{{ url_for('analyst_reports') }}">All</a>
+  </li>
+  {% for t in targets %}
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if selected_target == (t.target or '') else '' }}" href="{{ url_for('analyst_reports', target=t.target) }}">
+        {{ t.target or '(Unlabeled)' }}
+        <span class="badge bg-secondary">{{ t.count }}</span>
+      </a>
+    </li>
+  {% endfor %}
+  {% if selected_target %}
+    <li class="nav-item ms-auto"><a class="nav-link" href="{{ url_for('analyst_reports') }}">Clear filter</a></li>
+  {% endif %}
+  </ul>
+
+{% if selected_target %}
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>{{ selected_target }}</strong>
+      <span class="text-muted small">{{ items|length }} records</span>
+    </div>
+    <div class="card-body table-responsive">
+      <table class="table table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th scope="col">Created</th>
+            <th scope="col">Prediction</th>
+            <th scope="col">Probability</th>
+            {% for col in columns %}
+            <th scope="col">{{ col }}</th>
+            {% endfor %}
+            <th scope="col">More</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if items %}
+            {% for it in items %}
+              {% set inp = it.inputs or {} %}
+              <tr>
+                <td>{% if it.created_at %}{{ it.created_at.strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}</td>
+                <td>
+                  {% if it.prediction is number %}
+                    {% set is_money = ('salary' in (selected_target or '')|lower) or ('price' in (selected_target or '')|lower) %}
+                    {{ ('%.0f' if is_money else '%.2f')|format(it.prediction) }}
+                  {% else %}
+                    {{ it.prediction }}
+                  {% endif %}
+                </td>
+                <td>{% if it.probability is not none %}{{ ('%.3f'|format(it.probability)) }}{% endif %}</td>
+                {% for col in columns %}
+                  {% set val = inp.get(col) %}
+                  <td>{% if val is number %}{{ ('%.4f'|format(val)) }}{% else %}{{ val if val is not none else '' }}{% endif %}</td>
+                {% endfor %}
+                <td class="small text-muted" style="max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  {% for k,v in inp.items() %}
+                    {% if k not in columns %}<div>{{ k }}: {{ v }}</div>{% endif %}
+                  {% endfor %}
+                </td>
+                <td style="width:1%; white-space:nowrap;">
+                  <form method="post" action="{{ url_for('analyst_reports_delete', pid=it.id) }}" onsubmit="return confirm('Delete this saved prediction?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="{{ 2 + (columns|length) + 2 }}" class="text-center text-muted">No saved predictions for this model.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  {% for t in targets %}
+    {% set tgt = t.target or '(Unlabeled)' %}
+    {% set arr = (grouped.get(tgt) if grouped else []) %}
+    {% if arr and (columns_per.get(tgt)) %}
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>{{ tgt }}</strong>
+          <div>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('analyst_reports', target=t.target) }}">Open dedicated view</a>
+          </div>
+        </div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm table-striped align-middle">
+            <thead>
+              <tr>
+                <th scope="col">Created</th>
+                <th scope="col">Prediction</th>
+                <th scope="col">Probability</th>
+                {% for col in columns_per.get(tgt) %}
+                  <th scope="col">{{ col }}</th>
+                {% endfor %}
+                <th scope="col">More</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in arr %}
+                {% set inp = it.inputs or {} %}
+                <tr>
+                  <td>{% if it.created_at %}{{ it.created_at.strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}</td>
+                  <td>
+                    {% if it.prediction is number %}
+                      {% set is_money = ('salary' in (tgt or '')|lower) or ('price' in (tgt or '')|lower) %}
+                      {{ ('%.0f' if is_money else '%.2f')|format(it.prediction) }}
+                    {% else %}
+                      {{ it.prediction }}
+                    {% endif %}
+                  </td>
+                  <td>{% if it.probability is not none %}{{ ('%.3f'|format(it.probability)) }}{% endif %}</td>
+                  {% for col in columns_per.get(tgt) %}
+                    {% set val = inp.get(col) %}
+                    <td>{% if val is number %}{{ ('%.4f'|format(val)) }}{% else %}{{ val if val is not none else '' }}{% endif %}</td>
+                  {% endfor %}
+                  <td class="small text-muted" style="max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {% for k,v in inp.items() %}
+                      {% if k not in columns_per.get(tgt) %}<div>{{ k }}: {{ v }}</div>{% endif %}
+                    {% endfor %}
+                  </td>
+                  <td style="width:1%; white-space:nowrap;">
+                    <form method="post" action="{{ url_for('analyst_reports_delete', pid=it.id) }}" onsubmit="return confirm('Delete this saved prediction?');">
+                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  {% else %}
+    {% if items and (columns_all and columns_all|length) %}
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>All Predictions</strong>
+          <span class="text-muted small">{{ items|length }} records</span>
+        </div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm table-striped align-middle">
+            <thead>
+              <tr>
+                <th scope="col">Created</th>
+                <th scope="col">Target</th>
+                <th scope="col">Prediction</th>
+                <th scope="col">Probability</th>
+                {% for col in columns_all %}
+                  <th scope="col">{{ col }}</th>
+                {% endfor %}
+                <th scope="col">More</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in items %}
+                {% set inp = it.inputs or {} %}
+                <tr>
+                  <td>{% if it.created_at %}{{ it.created_at.strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}</td>
+                  <td>{{ it.target or '' }}</td>
+                  <td>
+                    {% if it.prediction is number %}
+                      {% set tgt_all = (it.target or '') %}
+                      {% set is_money = ('salary' in tgt_all|lower) or ('price' in tgt_all|lower) %}
+                      {{ ('%.0f' if is_money else '%.2f')|format(it.prediction) }}
+                    {% else %}
+                      {{ it.prediction }}
+                    {% endif %}
+                  </td>
+                  <td>{% if it.probability is not none %}{{ ('%.3f'|format(it.probability)) }}{% endif %}</td>
+                  {% for col in columns_all %}
+                    {% set val = inp.get(col) %}
+                    <td>{% if val is number %}{{ ('%.4f'|format(val)) }}{% else %}{{ val if val is not none else '' }}{% endif %}</td>
+                  {% endfor %}
+                  <td class="small text-muted" style="max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {% for k,v in inp.items() %}
+                      {% if k not in columns_all %}<div>{{ k }}: {{ v }}</div>{% endif %}
+                    {% endfor %}
+                  </td>
+                  <td style="width:1%; white-space:nowrap;">
+                    <form method="post" action="{{ url_for('analyst_reports_delete', pid=it.id) }}" onsubmit="return confirm('Delete this saved prediction?');">
+                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="{{ 4 + (columns_all|length) + 2 }}" class="text-center text-muted">No saved predictions yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <div class="text-muted">No saved predictions yet.</div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% endblock %}

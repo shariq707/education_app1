@@ -1,0 +1,48 @@
+{% extends "base_dashboard.html" %}
+{% block breadcrumbs %}
+<div class="bg-light py-2">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('student_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Announcements</li>
+      </ol>
+    </nav>
+  </div>
+  </div>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header">Latest Announcements</div>
+      {% if items and items|length > 0 %}
+        <div class="list-group list-group-flush">
+          {% for a in items %}
+            <div class="list-group-item">
+              <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ a.title }}</h5>
+                <small class="text-muted">{{ a.created_at }}</small>
+              </div>
+              <p class="mb-1">{{ a.content }}</p>
+              <small class="text-muted">Course: {{ a.course_code }}</small>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card-body">
+          <div class="alert alert-secondary mb-0">No announcements yet for your enrolled courses.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Stay Updated</h5>
+        <p class="card-text">You will automatically see announcements for courses you are enrolled in.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

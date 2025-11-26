@@ -1,0 +1,82 @@
+<!-- 
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h2>Login</h2>
+    <form method="POST">
+        Email: <input type="email" name="email" required><br>
+        Password: <input type="password" name="password" required><br>
+        <button type="submit">Login</button>
+    </form>
+    <a href="/signup">Don't have account? Signup</a>
+</body>
+</html> -->
+
+
+
+
+
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2>Login</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'danger' if category=='danger' else category }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% endwith %}
+    <form method="POST">
+      <div class="mb-3">
+        <label>Email</label>
+        <input type="email" name="email" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label>Password</label>
+        <div class="input-group">
+          <input type="password" name="password" class="form-control" id="loginPassword" required>
+          <div class="input-group-append">
+            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#loginPassword" aria-label="Show password">
+              <i class="far fa-eye"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block">Login</button>
+      <div class="mt-3">
+        <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  $(function(){
+    $('.toggle-password').on('click', function(){
+      var $btn = $(this);
+      var target = $btn.data('target');
+      var $input = $(target);
+      if ($input.attr('type') === 'password') {
+        $input.attr('type','text');
+        $btn.attr('aria-label','Hide password');
+        $btn.find('i').removeClass('fa-eye').addClass('fa-eye-slash');
+      } else {
+        $input.attr('type','password');
+        $btn.attr('aria-label','Show password');
+        $btn.find('i').removeClass('fa-eye-slash').addClass('fa-eye');
+      }
+    });
+  });
+  </script>
+{% endblock %}

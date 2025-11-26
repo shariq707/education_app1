@@ -1,0 +1,100 @@
+{% extends "base_dashboard.html" %}
+{% block breadcrumbs %}
+<div class="bg-light py-2">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Manage Users</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<h3 class="mb-3">Manage Users</h3>
+
+<div class="row">
+  <div class="col-md-5">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">Add New User</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('admin_users_add') }}">
+          <div class="form-group">
+            <label for="add_name">Name</label>
+            <input type="text" class="form-control" id="add_name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="add_email">Email</label>
+            <input type="email" class="form-control" id="add_email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="add_password">Password</label>
+            <input type="text" class="form-control" id="add_password" name="password" required>
+          </div>
+          <div class="form-group">
+            <label for="add_role">Role</label>
+            <select id="add_role" name="role" class="form-control">
+              <option>Student</option>
+              <option>Teacher</option>
+              <option>Analyst</option>
+              <option>Admin</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Add User</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header">Users</div>
+      <div class="card-body p-0">
+        {% if not items %}
+          <p class="text-muted m-3">No users found.</p>
+        {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th style="width:1%; white-space:nowrap;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in items %}
+              <tr>
+                <td>
+                  <form class="form-inline" method="post" action="{{ url_for('admin_users_update', uid=u._id) }}">
+                    <input type="text" class="form-control form-control-sm mr-2" name="name" value="{{ u.name }}" placeholder="Name" style="min-width:140px;">
+                    <input type="email" class="form-control form-control-sm mr-2" name="email" value="{{ u.email }}" placeholder="Email" style="min-width:180px;">
+                    <select name="role" class="form-control form-control-sm mr-2">
+                      {% set roles = ['Student','Teacher','Analyst','Admin'] %}
+                      {% for r in roles %}
+                        <option value="{{ r }}" {% if u.role==r %}selected{% endif %}>{{ r }}</option>
+                      {% endfor %}
+                    </select>
+                    <input type="text" class="form-control form-control-sm mr-2" name="password" placeholder="New password (optional)" style="min-width:180px;">
+                    <button type="submit" class="btn btn-sm btn-success">Save</button>
+                  </form>
+                </td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.role }}</td>
+                <td>
+                  <form method="post" action="{{ url_for('admin_users_delete', uid=u._id) }}" onsubmit="return confirm('Delete this user?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

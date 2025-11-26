@@ -1,0 +1,25 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3>Enroll in Courses</h3>
+<p>Browse available courses and enroll.</p>
+{% if message %}
+  <div class="alert alert-info">{{ message }}</div>
+{% endif %}
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Select Course</label>
+    {% if available_courses and available_courses|length > 0 %}
+      <select class="form-select" name="course_code" required>
+        <option value="" disabled selected>Choose a course</option>
+        {% for c in available_courses %}
+          <option value="{{ c.code }}">{{ c.code }}{% if c.title %} - {{ c.title }}{% endif %}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">This list updates automatically when teachers add or delete courses.</div>
+    {% else %}
+      <div class="alert alert-secondary mb-0">No courses available to enroll right now.</div>
+    {% endif %}
+  </div>
+  <button type="submit" class="btn btn-primary" {% if not available_courses or available_courses|length == 0 %}disabled{% endif %}>Enroll</button>
+  <a href="{{ url_for('student_courses') }}" class="btn btn-link">Back to My Courses</a>
+{% endblock %}

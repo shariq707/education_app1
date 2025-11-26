@@ -1,0 +1,57 @@
+Student_ID,Age,Gender,Attendance_Percentage,Assignment_Completion,Test_Score,Family_Income,Parental_Education,Access_to_Resources,Dropout
+1,24,Female,76.9,66.42,26.22,83266.84,Masters,No,1
+2,21,Female,56.63,63.82,47.05,43410.79,PhD,Yes,1
+3,28,Male,60.14,51.31,91.22,22628.62,High School,Yes,1
+4,25,Female,75.43,86.58,86.35,120811.76,PhD,No,1
+5,22,Male,78.94,9.07,13.09,84972.04,High School,No,1
+6,24,Female,61.79,71.45,28.42,148810.01,PhD,Yes,1
+7,27,Female,72.46,45.73,67.04,158405.57,PhD,No,1
+8,20,Female,55,3.29,96.56,143921.25,High School,No,1
+9,24,Female,80.28,45.32,5.31,182361.01,Masters,No,1
+10,28,Male,74.32,17.41,26.8,33519.09,High School,No,1
+11,28,Male,83.04,13.91,93.49,105346.85,PhD,No,1
+12,25,Male,73.17,4.69,76.99,144114.21,Bachelors,Yes,1
+13,22,Female,99.78,17.25,33.96,124842.92,High School,Yes,1
+14,21,Female,62.58,37.63,79.23,184156.99,Bachelors,No,1
+15,25,Female,62.02,90.29,74.95,52079.55,High School,No,1
+16,25,Female,78.79,36.32,26.01,30174.59,High School,Yes,1
+17,20,Male,98.03,76.63,20.05,65779.88,Bachelors,No,1
+18,23,Male,50.69,93.64,60.05,63190.48,Masters,Yes,1
+19,22,Male,61,59.79,85.36,155577.77,Masters,No,1
+20,19,Female,79.42,32.15,15.52,199405.48,Bachelors,Yes,1
+21,25,Female,92.93,32.35,71.43,184881.13,High School,Yes,1
+22,29,Female,76.23,72.55,89.26,121601.72,Bachelors,Yes,0
+23,15,Female,75.3,73.96,88.54,178422.3,High School,Yes,0
+24,20,Female,78,71,85.96,164526.9,Bachelors,No,0
+25,24,Female,79,78.54,81.96,154294.54,High School,Yes,0
+26,26,Male,70,76,83.49,123542.78,Masters,Yes,0
+27,24,Female,80,77,80.69,121601.72,High School,No,0
+28,28,Female,76,72.77,85.21,193459.45,High School,Yes,0
+29,42,Male,79,74,89.71,135489.45,Masters,Yes,0
+30,22,Female,77.8,73.85,84.21,145456.47,High School,No,0
+31,21,Female,79.7,70.25,89.7,164893.54,High School,Yes,0
+32,19,Male,76.79,76.26,80.7,121601.72,Bachelors,No,0
+33,30,Female,76.23,72.55,90.54,121601.72,PhD,Yes,0
+34,29,Female,76.23,72.55,89.26,121601.72,High School,Yes,0
+35,28,Male,94.39,79.07,77.3,140001.86,Masters,Yes,0
+36,27,Male,99.98,93.88,61.63,41715.05,Masters,Yes,0
+37,29,Female,51.41,27.84,74.61,25029.25,Masters,No,1
+38,29,Male,77.75,15.32,42.69,188479.55,Masters,No,1
+39,20,Female,82.59,55.5,46.49,57365.89,High School,No,1
+40,29,Female,80.69,91.8,87.14,104769.23,PhD,No,1
+41,24,Female,85.77,71.95,33.38,104500.28,PhD,Yes,1
+42,21,Male,87.32,66.79,90.49,99825.37,Masters,No,1
+43,26,Male,57.52,73.35,62.65,121126.43,Masters,Yes,1
+44,20,Female,97.34,1.33,41.56,88878.36,PhD,Yes,1
+45,22,Male,96.47,19.43,19.38,106296.01,Bachelors,No,1
+46,20,Male,86.21,71.6,25.05,92274.26,Bachelors,No,1
+47,24,Male,71.93,48.47,28.96,153691.58,Masters,Yes,1
+48,22,Male,79.83,96.23,34.32,159668.53,Bachelors,Yes,1
+49,26,Male,73.46,35.79,85.27,74359.47,PhD,No,1
+50,24,Female,63.36,43.29,48.11,70237.5,High School,No,1
+51,19,Female,66.79,98.3,79.67,133447.32,High School,No,1
+52,21,Male,70,76,83.49,123542.78,Masters,Yes,0
+53,26,Female,80,77,80.69,121601.72,High School,No,0
+54,29,Female,76,72.77,85.21,193459.45,High School,Yes,0
+55,19,Male,79,74,89.71,135489.45,Masters,Yes,0
+56,27,Female,56.43,60.24,56.75,166177.73,Masters,Yes,1

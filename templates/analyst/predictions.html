@@ -1,0 +1,271 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h3 class="mb-3">Predictive Analysis</h3>
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Top Enrolled Courses</h5>
+        <div class="position-relative" style="min-height:240px;">
+          <canvas id="topEnrollChart" height="110"></canvas>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+        <script>
+          (function(){
+            try{
+              const H = {{ (high_low or {'high': []})|tojson|safe }};
+              const arr = (H && H.high) ? H.high : [];
+              const labels = (arr||[]).map(x=>x.course);
+              const values = (arr||[]).map(x=>Number(x.count||0));
+              const ctx = document.getElementById('topEnrollChart').getContext('2d');
+              const colors = ['#007bff','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1','#fd7e14','#20c997','#6610f2','#e83e8c'];
+              if (ctx && labels.length){
+                new Chart(ctx, {
+                  type: 'bar',
+                  data: { labels, datasets: [{ label: 'Enrollments', data: values, backgroundColor: labels.map((_,i)=>colors[i%colors.length]) }] },
+                  options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } }
+                });
+              }
+            } catch(e){ console.warn('TopEnrolled chart error', e); }
+          })();
+        </script>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Course Enrollment Outlook</h5>
+        <div class="row">
+          <div class="col-sm-6">
+            <h6>High</h6>
+            <ul class="list-group list-group-flush">
+              {% for c in high_low.high %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">{{ c.course }}<span class="badge badge-primary badge-pill">{{ c.count }}</span></li>
+              {% else %}
+              <li class="list-group-item text-muted">No data</li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="col-sm-6">
+            <h6>Low</h6>
+            <ul class="list-group list-group-flush">
+              {% for c in high_low.low %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">{{ c.course }}<span class="badge badge-secondary badge-pill">{{ c.count }}</span></li>
+              {% else %}
+              <li class="list-group-item text-muted">No data</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Upcoming Performance Prediction (Proxy)</h5>
+    <div class="table-responsive">
+      <table class="table table-sm table-striped">
+        <thead><tr><th>Course</th><th>Predicted Avg</th></tr></thead>
+        <tbody>
+          {% for p in upcoming %}
+          <tr><td>{{ p.course }}</td><td>{{ p.predicted_avg }}</td></tr>
+          {% else %}
+          <tr><td colspan="2" class="text-muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-body">
+    <h5 class="card-title">Interactive Chart Builder</h5>
+    <p class="text-muted small mb-3">Create quick charts from predictions and risk data, or paste your own values. Choose a source, pick chart type, and render.</p>
+    <div class="form-row align-items-end">
+      <div class="form-group col-md-4">
+        <label for="chartSource">Data source</label>
+        <select id="chartSource" class="form-control">
+          <option value="upcoming">Upcoming predicted averages</option>
+          <option value="enrollment">Enrollment outlook (High+Low)</option>
+          <option value="manual">Manual input</option>
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label for="chartType">Chart type</label>
+        <select id="chartType" class="form-control">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+        </select>
+      </div>
+      <div class="form-group col-md-5" id="manualGroup" style="display:none;">
+        <label for="chartData">Manual data (label,value per line)</label>
+        <textarea id="chartData" class="form-control" rows="3" placeholder="Course A,78\nCourse B,84\nCourse C,91"></textarea>
+      </div>
+    </div>
+    <div class="mb-3">
+      <button id="renderChart" class="btn btn-primary">Render Chart</button>
+    </div>
+    <div class="position-relative" style="min-height:280px;">
+      <canvas id="analystChart" height="120"></canvas>
+    </div>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+      (function(){
+        const SRC = document.getElementById('chartSource');
+        const TYPE = document.getElementById('chartType');
+        const TA   = document.getElementById('chartData');
+        const MAN  = document.getElementById('manualGroup');
+        const ctx  = document.getElementById('analystChart').getContext('2d');
+        let chart;
+
+        const UPCOMING = {{ (upcoming or [])|tojson|safe }};
+        const HIGHLOW  = {{ (high_low or {'high': [], 'low': []})|tojson|safe }};
+        const AT_RISK  = {{ (at_risk or [])|tojson|safe }};
+
+        function toColors(n){
+          const palette = ['#007bff','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1','#fd7e14','#20c997','#6610f2','#e83e8c'];
+          const out=[]; for(let i=0;i<n;i++){ out.push(palette[i%palette.length]); } return out;
+        }
+
+        function buildDataFromSource(){
+          const src = SRC.value;
+          if (src === 'manual'){
+            const lines = (TA.value||'').split(/\n+/).map(s=>s.trim()).filter(Boolean);
+            const labels=[]; const values=[];
+            for(const line of lines){
+              const parts=line.split(',');
+              if(parts.length>=2){ labels.push(parts[0].trim()); values.push(parseFloat(parts[1])); }
+            }
+            return { labels, datasets:[{ label:'Manual', data: values, backgroundColor: toColors(values.length), borderColor: '#007bff' }]};
+          }
+          if (src === 'upcoming'){
+            const labels = (UPCOMING||[]).map(x=>x.course);
+            const values = (UPCOMING||[]).map(x=>Number(x.predicted_avg||0));
+            return { labels, datasets:[{ label:'Predicted Avg', data: values, backgroundColor: toColors(values.length), borderColor: '#17a2b8' }]};
+          }
+          if (src === 'enrollment'){
+            const highs = (HIGHLOW && HIGHLOW.high) || [];
+            const lows  = (HIGHLOW && HIGHLOW.low)  || [];
+            // Merge highs and lows by course, keeping the maximum count to avoid duplicates
+            const combined = new Map();
+            for (const item of [].concat(highs, lows)){
+              if (!item) continue;
+              const course = String(item.course || '').trim();
+              if (!course) continue;
+              const cnt = Number(item.count || 0);
+              const prev = combined.get(course) || 0;
+              combined.set(course, Math.max(prev, cnt));
+            }
+            const labels = Array.from(combined.keys());
+            const values = Array.from(combined.values());
+            return { labels, datasets:[{ label:'Projected Enrollment', data: values, backgroundColor: toColors(values.length), borderColor: '#28a745' }]};
+          }
+          return { labels: [], datasets: [] };
+        }
+
+        function render(){
+          const cfgData = buildDataFromSource();
+          const type = TYPE.value || 'bar';
+          const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: type!=='pie' }, tooltip: { enabled: true } },
+            scales: (type==='pie') ? {} : { y: { beginAtZero: true } }
+          };
+          if(chart){ chart.destroy(); }
+          chart = new Chart(ctx, { type: type, data: cfgData, options: options });
+        }
+
+        SRC.addEventListener('change', function(){ MAN.style.display = (this.value==='manual') ? '' : 'none'; });
+        document.getElementById('renderChart').addEventListener('click', render);
+        // Initial render from default source
+        render();
+      })();
+    </script>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-body">
+    <h5 class="card-title">Course-wise Assignment Marks</h5>
+    <p class="text-muted small mb-3">Select a course to view students' average marks/percentages. Use this to analyze performance distribution per course.</p>
+    <div class="form-row align-items-end">
+      <div class="form-group col-md-5">
+        <label for="courseSelect">Course</label>
+        <select id="courseSelect" class="form-control">
+          {% set keys = course_marks.keys()|list %}
+          {% for cid in keys %}
+            {% set label = course_labels.get(cid) %}
+            {% if label and label|upper != 'UNKNOWN' %}
+              <option value="{{ cid }}">{{ label }}</option>
+            {% else %}
+              <option value="{{ cid }}">{{ cid }}</option>
+            {% endif %}
+          {% else %}
+            <option value="" disabled>No course marks available</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label for="courseChartType">Chart type</label>
+        <select id="courseChartType" class="form-control">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+        </select>
+      </div>
+      <div class="form-group col-md-4">
+        <button id="renderCourseChart" class="btn btn-outline-primary" style="margin-top: 32px;">Render</button>
+      </div>
+    </div>
+    <div class="position-relative" style="min-height:300px;">
+      <canvas id="courseMarksChart" height="130"></canvas>
+    </div>
+    <script>
+      (function(){
+        const COURSE_MARKS = {{ (course_marks or {})|tojson|safe }};
+        const sel  = document.getElementById('courseSelect');
+        const typeSel = document.getElementById('courseChartType');
+        const btn  = document.getElementById('renderCourseChart');
+        const ctx  = document.getElementById('courseMarksChart').getContext('2d');
+        let cmChart;
+
+        function toColors(n){
+          const palette = ['#007bff','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1','#fd7e14','#20c997','#6610f2','#e83e8c'];
+          const out=[]; for(let i=0;i<n;i++){ out.push(palette[i%palette.length]); } return out;
+        }
+
+        function renderCourse(){
+          const cid = sel && sel.value;
+          if (!cid || !COURSE_MARKS[cid]){ return; }
+          let labels = (COURSE_MARKS[cid].labels || []).slice();
+          // Prettify any labels that look like 24-hex ObjectIds
+          const isHex24 = s => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
+          labels = labels.map(l => isHex24(l) ? ('ID …' + String(l).slice(-6)) : l);
+          // Coerce values to numbers
+          const values = (COURSE_MARKS[cid].values || []).map(v=>{ const n = Number(String(v).replace('%','')); return isNaN(n)?0:n; });
+          console.log('Course chart data', { cid, labels, values });
+          const nonZero = values.some(v=>v>0);
+          if (!labels.length || !nonZero){
+            if (window.Swal){
+              Swal.fire({ icon:'info', title:'No data to chart', text:'This course has no non-zero marks yet. Try another course or update evaluations.' });
+            }
+          }
+          const data = { labels: labels, datasets: [{ label: 'Average Marks', data: values, backgroundColor: toColors(values.length), borderColor: '#007bff' }] };
+          const t = (typeSel && typeSel.value) || 'bar';
+          const options = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display: t!=='pie' } }, scales: (t==='pie')? {} : { y: { beginAtZero:true, max: 100 } } };
+          if (cmChart){ cmChart.destroy(); }
+          cmChart = new Chart(ctx, { type: t, data: data, options: options });
+        }
+        if (btn) btn.addEventListener('click', renderCourse);
+        if (sel) sel.addEventListener('change', renderCourse);
+        // Auto-render first available course
+        if (sel && sel.options.length && sel.value){ renderCourse(); }
+      })();
+    </script>
+  </div>
+</div>
+{% endblock %}

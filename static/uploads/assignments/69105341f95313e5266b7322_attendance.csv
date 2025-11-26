@@ -1,0 +1,10 @@
+student_id,course_code,date,status
+S001,cs101,5/20/2023,Present
+S002,cs102,5/28/2023,Absent
+S003,cs103,6/5/2023,Present
+,cs104,6/13/2023,Absent
+S005,,6/21/2023,Present
+S006,cs106,,Absent
+S007,cs107,7/7/2023,Present
+S008,cs108,7/15/2023,Absent
+S009,cs109,7/23/2023,Present
