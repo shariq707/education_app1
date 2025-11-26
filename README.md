@@ -1,3 +1,11 @@
+![Home1](https://github.com/user-attachments/assets/2fa7f7d9-d6b8-4cd8-add0-c7fbdd414b22)
+![Admin1](https://github.com/user-attachments/assets/93f35e3b-74e5-4676-9b5c-d94c22fdd7f3)
+![TeacherDashboard](https://github.com/user-attachments/assets/89a6b1e8-0e2d-402f-8826-5df006dbc519)
+![Studentdashboard](https://github.com/user-attachments/assets/dd5703bd-1853-496a-ae07-1926dae58052)
+![Analystdashboard](https://github.com/user-attachments/assets/a50c992f-1372-402d-81b3-96df54d1101b)
+
+
+
 # Education Management System
 
 A comprehensive web-based education management system built with Flask and MongoDB, designed to facilitate learning and teaching processes with features for students, teachers, and administrators.
